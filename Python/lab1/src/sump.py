@@ -10,6 +10,7 @@ def sump(n):
 	
 	
 def sump2(n):
+	"Funkcja zwraca sumę podzielnikow" # dokumentacja
 	sum = 0
 	p = 1
 	while p < n:
