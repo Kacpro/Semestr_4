@@ -1,0 +1,58 @@
+Zad 3.5
+
+0  80		0 -> R0
+1  90		0 -> R1
+2  EE		R0 -> mem[14] (wyzerowanie)
+3  86		6 -> R0
+4  DD		mem[13] -> R1		
+5  20		R0 + R1 -> R0
+6  EE		R0 -> mem[14]
+7  00		goto 0 (pêtla)
+8  00
+9  00
+10 00
+11 00
+12 00
+13 05		inicjalizacja komórki liczb¹ 5
+14 00
+15 00
+
+
+mno¿enie
+Zad 3.6
+
+0  80		0 -> R0
+1  90		0 -> R1
+2  EE		R0 -> mem[14] (wyzerowanie)
+3  88		8 -> R0
+4  DD		mem[13] -> R1		
+5  60		R0 * R1 -> {R0, R1}
+6  EE		R0 -> mem[14]
+7  FF	 	R1 -> mem[15]
+8  00		goto 0 (pêtla)
+9  00
+10 00
+11 00
+12 00
+13 09		inicjalizacja komórki liczb¹ 9
+14 00
+15 00
+
+dod do r1
+0  80		0 -> R0
+1  90		0 -> R1
+2  EE		R0 -> mem[14] (wyzerowanie)
+3  86		6 -> R0
+4  DD		mem[13] -> R1		
+5  30		R0 + R1 -> R1
+6  FE		R1 -> mem[14]
+7  00		goto 0 (pêtla)
+8  00
+9  00
+10 00
+11 00
+12 00
+13 05		inicjalizacja komórki liczb¹ 5
+14 00
+15 00
+
