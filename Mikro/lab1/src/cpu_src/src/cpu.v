@@ -99,6 +99,24 @@ begin
 					begin
 						r0 <= r0 + r1;			//wykonujemy dodawanie: add r0, r1 (r0 = r0 + r1)
 					end
+
+//////////////////////////////////////////////////////////					
+					3'b011:						
+					begin
+						r1 <= r0 + r1;	
+					end
+					
+					3'b110:						
+					begin
+						r0 <= r0 * r1;	
+					end
+					
+					3'b111:						
+					begin
+						r1 <= r0 * r1;	
+					end
+//////////////////////////////////////////////////////////		
+					
 				endcase
 			end
 			else									//gdy bit 7 != 0, to kod operacji stanowi instrukcje load, store lub move

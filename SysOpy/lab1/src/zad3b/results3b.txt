@@ -1,0 +1,67 @@
+Parameters 2048 4096 1 1 1000 1 1000
+
+
+Static O0
+	Creating an array:		 	 Real: 0.098448    User: 0.090000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.043159    User: 0.040000    System: 0.000000
+	Finding a block:		 	 Real: 0.044358    User: 0.040000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.041883    User: 0.050000    System: 0.000000
+
+
+Static O1
+	Creating an array:		 	 Real: 0.075492    User: 0.070000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.036918    User: 0.040000    System: 0.000000
+	Finding a block:		 	 Real: 0.000001    User: 0.000000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.036094    User: 0.030000    System: 0.000000
+
+
+Static Os
+	Creating an array:		 	 Real: 0.088700    User: 0.080000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.041439    User: 0.050000    System: 0.000000
+	Finding a block:		 	 Real: 0.000011    User: 0.000000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.041150    User: 0.040000    System: 0.000000
+
+
+Shared O0
+	Creating an array:		 	 Real: 0.087320    User: 0.070000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.042275    User: 0.050000    System: 0.000000
+	Finding a block:		 	 Real: 0.043886    User: 0.040000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.042414    User: 0.040000    System: 0.000000
+
+
+Shared O1
+	Creating an array:		 	 Real: 0.078589    User: 0.070000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.036636    User: 0.040000    System: 0.000000
+	Finding a block:		 	 Real: 0.000001    User: 0.000000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.035969    User: 0.040000    System: 0.000000
+
+
+Shared Os
+	Creating an array:		 	 Real: 0.090263    User: 0.080000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.043695    User: 0.040000    System: 0.000000
+	Finding a block:		 	 Real: 0.000011    User: 0.000000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.042745    User: 0.040000    System: 0.000000
+
+
+Dynamic O0	
+	Creating an array:		 	 Real: 0.089267    User: 0.080000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.042932    User: 0.050000    System: 0.000000
+	Finding a block:		 	 Real: 0.043999    User: 0.040000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.041568    User: 0.040000    System: 0.000000
+
+
+Dynamic O1
+	Creating an array:		 	 Real: 0.080795    User: 0.080000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.038295    User: 0.030000    System: 0.000000
+	Finding a block:		 	 Real: 0.006835    User: 0.010000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.036105    User: 0.040000    System: 0.000000
+
+
+Dynamic Os
+	Creating an array:		  	 Real: 0.089940    User: 0.090000    System: 0.000000
+	Del. and ins. n elements:		 Real: 0.044227    User: 0.040000    System: 0.000000
+	Finding a block:		 	 Real: 0.008263    User: 0.010000    System: 0.000000
+	Del. and ins. elem. n times:		 Real: 0.041500    User: 0.040000    System: 0.000000
+
+
+Używanie domyślnej opcji optymalizacji jest najmniej wydajne. Okazuje się, że najlepsze czasy otrzymujemy korzysając z opcji O1. Opcja Os pozwala na optymalizację wielkości programu, co niekoniecznie przekłada się na zwiększenie szybkości.

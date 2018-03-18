@@ -1,0 +1,4 @@
+Creating an array:		 Real: 0.089818	 User: 0.080000	 System: 0.000000
+Del. and ins. n elements:		 Real: 0.042860	 User: 0.040000	 System: 0.000000
+Finding a block:		 Real: 0.008316	 User: 0.010000	 System: 0.000000
+Del. and ins. elem. n times:		 Real: 0.040870	 User: 0.040000	 System: 0.000000
