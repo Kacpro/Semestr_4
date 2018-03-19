@@ -1,46 +1,49 @@
 Sort:
 
-recordSize: 4; 		numberOfRecords: 1000		mode: sys	User time: 0.255000	System time: 0.412347	
-recordSize: 4; 		numberOfRecords: 1000		mode: lib	User time: 0.190482	System time: 0.099804
-recordSize: 4; 		numberOfRecords: 2000		mode: sys 	User time: 0.834834	System time: 1.368239
-recordSize: 4; 		numberOfRecords: 2000		mode: lib	User time: 0.794929	System time: 1.368239
+recordSize: 4; 		numberOfRecords: 1000		mode: sys	User time: 0.066617	System time: 0.415889	
+recordSize: 4; 		numberOfRecords: 1000		mode: lib	User time: 0.126956	System time: 0.480243
+recordSize: 4; 		numberOfRecords: 2000		mode: sys 	User time: 0.324144	System time: 1.592974
+recordSize: 4; 		numberOfRecords: 2000		mode: lib	User time: 0.614720	System time: 1.795840
 
-recordSize: 512; 	numberOfRecords: 1000		mode: sys	User time: 0.186569	System time: 0.498666		
-recordSize: 512; 	numberOfRecords: 1000		mode: lib	User time: 0.186626	System time: 0.615938
-recordSize: 512; 	numberOfRecords: 2000		mode: sys	User time: 0.680383	System time: 2.059246		
-recordSize: 512; 	numberOfRecords: 2000		mode: lib	User time: 0.348070	System time: 2.843432
+recordSize: 512; 	numberOfRecords: 1000		mode: sys	User time: 0.091374	System time: 0.408408		
+recordSize: 512; 	numberOfRecords: 1000		mode: lib	User time: 0.174735	System time: 0.431941
+recordSize: 512; 	numberOfRecords: 2000		mode: sys	User time: 0.379335	System time: 1.641864		
+recordSize: 512; 	numberOfRecords: 2000		mode: lib	User time: 0.630932	System time: 1.848818 --
 
-recordSize: 4096; 	numberOfRecords: 1000		mode: sys	User time: 0.147425	System time: 0.628987
-recordSize: 4096; 	numberOfRecords: 1000		mode: lib	User time: 0.183405	System time: 0.630141
-recordSize: 4096; 	numberOfRecords: 2000		mode: sys	User time: 0.619016	System time: 2.601567
-recordSize: 4096; 	numberOfRecords: 2000		mode: lib	User time: 0.875764	System time: 2.486130
+recordSize: 4096; 	numberOfRecords: 1000		mode: sys	User time: 0.075176	System time: 0.472005
+recordSize: 4096; 	numberOfRecords: 1000		mode: lib	User time: 0.096189	System time: 0.483533
+recordSize: 4096; 	numberOfRecords: 2000		mode: sys	User time: 0.340908	System time: 1.953847
+recordSize: 4096; 	numberOfRecords: 2000		mode: lib	User time: 0.452007	System time: 1.982667
 
-recordSize: 8192; 	numberOfRecords: 1000		mode: sys	User time: 0.147141	System time: 0.898040
-recordSize: 8192; 	numberOfRecords: 1000		mode: lib	User time: 0.254640	System time: 0.835073
-recordSize: 8192; 	numberOfRecords: 2000		mode: sys	User time: 0.610697	System time: 3.823328
-recordSize: 8192; 	numberOfRecords: 2000		mode: lib	User time: 0.835917	System time: 3.730389
+recordSize: 8192; 	numberOfRecords: 1000		mode: sys	User time: 0.110996	System time: 0.720618
+recordSize: 8192; 	numberOfRecords: 1000		mode: lib	User time: 0.102916	System time: 0.759806
+recordSize: 8192; 	numberOfRecords: 2000		mode: sys	User time: 0.335304	System time: 3.095770
+recordSize: 8192; 	numberOfRecords: 2000		mode: lib	User time: 0.511668	System time: 3.115309
 
 
 
 
 Copy:
 
-recordSize: 4; 		numberOfRecords: 1000		mode: sys	User time: 0.006376	System time: 0.007298		
-recordSize: 4; 		numberOfRecords: 1000		mode: lib	User time: 0.000439	System time: 0.000000
-recordSize: 4; 		numberOfRecords: 2000		mode: sys 	User time: 0.002558	System time: 0.018366
-recordSize: 4; 		numberOfRecords: 2000		mode: lib	User time: 0.000618	System time: 0.000000
+recordSize: 4; 		numberOfRecords: 1000		bufferSize: 512		mode: sys	User time: 0.000274	System time: 0.000000		
+recordSize: 4; 		numberOfRecords: 1000		bufferSize: 512		mode: lib	User time: 0.000000	System time: 0.000399
+recordSize: 4; 		numberOfRecords: 2000		bufferSize: 512		mode: sys 	User time: 0.000000	System time: 0.000339
+recordSize: 4; 		numberOfRecords: 2000		bufferSize: 512		mode: lib	User time: 0.000392	System time: 0.000000
 
-recordSize: 512; 	numberOfRecords: 1000		mode: sys	User time: 0.150671	System time: 0.742886		
-recordSize: 512; 	numberOfRecords: 1000		mode: lib	User time: 0.001981	System time: 0.000000
-recordSize: 512; 	numberOfRecords: 2000		mode: sys	User time: 0.179073	System time: 1.476756		
-recordSize: 512; 	numberOfRecords: 2000		mode: lib	User time: 0.000000	System time: 0.004064
+recordSize: 512; 	numberOfRecords: 1000		bufferSize: 512		mode: sys	User time: 0.000000	System time: 0.005936		
+recordSize: 512; 	numberOfRecords: 1000		bufferSize: 512		mode: lib	User time: 0.000000	System time: 0.002372
+recordSize: 512; 	numberOfRecords: 2000		bufferSize: 512		mode: sys	User time: 0.000000	System time: 0.011268		
+recordSize: 512; 	numberOfRecords: 2000		bufferSize: 512		mode: lib	User time: 0.000000	System time: 0.002817
 
-recordSize: 4096; 	numberOfRecords: 1000		mode: sys	User time: 0.702572	System time: 6.159357
-recordSize: 4096; 	numberOfRecords: 1000		mode: lib	User time: 0.000000	System time: 0.008221
-recordSize: 4096; 	numberOfRecords: 2000		mode: sys	User time: 2.422958	System time: 11.253426
-recordSize: 4096; 	numberOfRecords: 2000		mode: lib	User time: 0.000000	System time: 0.016253
+recordSize: 4096; 	numberOfRecords: 1000		bufferSize: 512		mode: sys	User time: 0.002862	System time: 0.020468
+recordSize: 4096; 	numberOfRecords: 1000		bufferSize: 512		mode: lib	User time: 0.002976	System time: 0.007246
+recordSize: 4096; 	numberOfRecords: 2000		bufferSize: 512		mode: sys	User time: 0.002596	System time: 0.040029
+recordSize: 4096; 	numberOfRecords: 2000		bufferSize: 512		mode: lib	User time: 0.006249	System time: 0.007678
 
-recordSize: 8192; 	numberOfRecords: 1000		mode: sys	User time: 1.382130	System time: 10.663787
-recordSize: 8192; 	numberOfRecords: 1000		mode: lib	User time: 0.002889	System time: 0.015834
-recordSize: 8192; 	numberOfRecords: 2000		mode: sys	User time: 2.855475	System time: 23.397535
-recordSize: 8192; 	numberOfRecords: 2000		mode: lib	User time: 0.003001	System time: 0.019808
+recordSize: 8192; 	numberOfRecords: 1000		bufferSize: 512		mode: sys	User time: 0.002827	System time: 0.033598
+recordSize: 8192; 	numberOfRecords: 1000		bufferSize: 512		mode: lib	User time: 0.007905	System time: 0.009328
+recordSize: 8192; 	numberOfRecords: 2000		bufferSize: 512		mode: sys	User time: 0.003346	System time: 0.068848
+recordSize: 8192; 	numberOfRecords: 2000		bufferSize: 512		mode: lib	User time: 0.002589	System time: 0.023391
+
+
+Wyniki pokazują, że algorytm sortowania przez wstawianie ma złożoność czasową O(n^2) - dwukrotne zwiększenie ilości elementów zwiększa czas czterokrotnie. Zwiększanie wielkości rekordu minimalnie zwiększa czas sortowania.

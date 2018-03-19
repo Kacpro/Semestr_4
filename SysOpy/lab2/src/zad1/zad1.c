@@ -14,15 +14,15 @@ void generate(char* fileName, int numberOfRecords, int recordSize);
 
 void sort(char* fileName, int numberOfRecords, int recordSize, char* mode);
 
-void copy(char* sourceName, char* destinationName, int howManyRecords, int bufferSize, char* mode);
+void copy(char* sourceName, char* destinationName, int howManyRecords, int bufferSize, int recordSize, char* mode);
 
 
 void showHelp()
 {
-	printf("Possible arguments:");
-	printf("\tgenerate <file_name> <num_of_records> <record_size>");
-	printf("\tsort <file_name> <num_of_records> <record_size> lib|sys");
-	printf("\tcopy <source_file_name> <destination_file_name> <num_of_records> <buffer_size> lib|sys");	
+	printf("Possible arguments:\n");
+	printf("\tgenerate <file_name> <num_of_records> <record_size>\n");
+	printf("\tsort <file_name> <num_of_records> <record_size> lib|sys\n");
+	printf("\tcopy <source_file_name> <destination_file_name> <num_of_records> <buffer_size> <record_size> lib|sys\n");	
 }
 
 
@@ -76,16 +76,17 @@ int parse(int argc, char** argv)
     }
     else if (!strcmp(argv[1], "copy"))
     {
-        if (argc != 7) return -1;
-        if (strcmp(argv[6], "sys") && strcmp(argv[6], "lib")) return -1;
+        if (argc != 8) return -1;
+        if (strcmp(argv[7], "sys") && strcmp(argv[7], "lib")) return -1;
         char* sourcePath = argv[2];
         char* destinationName = argv[3];
 	int howManyRecords = atoi(argv[4]);
         int bufferSize = atoi(argv[5]);
-        char* mode = argv[6];
+	int recordSize = atoi(argv[6]);
+        char* mode = argv[7];
 
         getrusage(RUSAGE_SELF, &start);
-        copy(sourcePath, destinationName, howManyRecords, bufferSize, mode);
+        copy(sourcePath, destinationName, howManyRecords, bufferSize, recordSize, mode);
         getrusage(RUSAGE_SELF, &end);
         showResults(start, end, "Copy");
 
@@ -93,7 +94,6 @@ int parse(int argc, char** argv)
     }
     else
     {
-        printf("Error");
         return -1;
     }
 }
@@ -144,7 +144,6 @@ void sort(char *fileName, int numberOfRecords, int recordSize, char *mode)
 		fread(buffer2, sizeof(unsigned char), recordSize, handler);
 		if (buffer1[0] < buffer2[0])
 		{
-			printf("%#o  %#o  %d\n", buffer1[0], buffer2[0], j);
 			fseek(handler, recordSize*(j+1),0);
 			fwrite(buffer2, sizeof(unsigned char), recordSize, handler);
 		}
@@ -198,7 +197,7 @@ void sort(char *fileName, int numberOfRecords, int recordSize, char *mode)
 
 
 
-void copy(char *sourceName, char *destinationName, int howManyRecords, int bufferSize, char *mode)
+void copy(char *sourceName, char *destinationName, int howManyRecords, int bufferSize, int recordSize, char *mode)
 {
     if (!strcmp(mode, "lib"))
     {
@@ -207,12 +206,15 @@ void copy(char *sourceName, char *destinationName, int howManyRecords, int buffe
 
         char* buffer = calloc(bufferSize, sizeof(char));
 	
-	int recNum = howManyRecords;
+	int recNum = howManyRecords*recordSize;
         int buf;
         while((buf = fread(buffer, sizeof(char), bufferSize, handler1)) && recNum > 0)
         {
-            fwrite(buffer, sizeof(char), buf, handler2);
-	    recNum--;
+	    if (recNum - buf > 0)	
+            	fwrite(buffer, sizeof(char), buf, handler2);
+	    else
+		fwrite(buffer, sizeof(char), recNum, handler2);
+	    recNum -= buf;
         }
 
         fclose(handler1);
@@ -227,11 +229,14 @@ void copy(char *sourceName, char *destinationName, int howManyRecords, int buffe
         char* buffer = calloc(bufferSize, sizeof(char));
 
         int buf;
-	int recNum = howManyRecords;
-        while((buf=read(handler1, buffer, sizeof(char))) && recNum > 0)
+	int recNum = howManyRecords*recordSize;
+        while((buf=read(handler1, buffer, bufferSize*sizeof(char))) && recNum > 0)
         {
-            write(handler2, buffer, buf);
-	    recNum--;
+            if (recNum - buf > 0)
+	    	write(handler2, buffer, buf);
+	    else
+		write(handler2, buffer, recNum);
+	    recNum -= buf;;
         }
 
         close(handler1);
