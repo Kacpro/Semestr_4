@@ -17,11 +17,21 @@ void sort(char* fileName, int numberOfRecords, int recordSize, char* mode);
 void copy(char* sourceName, char* destinationName, int howManyRecords, int bufferSize, char* mode);
 
 
+void showHelp()
+{
+	printf("Possible arguments:");
+	printf("\tgenerate <file_name> <num_of_records> <record_size>");
+	printf("\tsort <file_name> <num_of_records> <record_size> lib|sys");
+	printf("\tcopy <source_file_name> <destination_file_name> <num_of_records> <buffer_size> lib|sys");	
+}
+
+
 
 int main(int argc, char** argv)
 {
     srand(time(NULL));
-    parse(argc, argv);
+    if (parse(argc, argv) == -1)
+	    showHelp();
 
     return 0;
 }
@@ -33,6 +43,7 @@ void showResults(struct rusage start, struct rusage end, char* operation)
     long double timeS = (end.ru_stime.tv_sec + (end.ru_stime.tv_usec * 1.0)/1e6 - start.ru_stime.tv_sec - (start.ru_stime.tv_usec * 1.0)/1e6);
     printf("\nUser time:\t%Lf\nSystem time:\t%Lf\n\n", timeU, timeS);
 }
+
 
 int parse(int argc, char** argv)
 {
