@@ -131,6 +131,12 @@ void sort(char *fileName, int numberOfRecords, int recordSize, char *mode)
     if (!strcmp(mode, "lib"))
     {
         FILE* handler = fopen(fileName, "r+");
+	
+	if (handler == NULL)
+	{
+		printf("File opening error\n");
+		exit(-1);
+	} 
 
         for (int i=1; i<numberOfRecords; i++)
         {
@@ -162,6 +168,12 @@ void sort(char *fileName, int numberOfRecords, int recordSize, char *mode)
     else
     {
         int handler = open(fileName, O_RDWR);
+
+	if (handler < 0)
+	{
+		printf("File opening error\n");
+		exit(-1);
+	} 
 
         for (int i=1; i<numberOfRecords; i++)
         {
@@ -204,6 +216,12 @@ void copy(char *sourceName, char *destinationName, int howManyRecords, int buffe
         FILE* handler1 = fopen(sourceName, "r");
         FILE* handler2 = fopen(destinationName, "w");
 
+	if (handler1 == NULL || handler2 == NULL)
+	{
+		printf("File opening error\n");
+		exit(-1);
+	} 
+
         char* buffer = calloc(bufferSize, sizeof(char));
 	
 	int recNum = howManyRecords*recordSize;
@@ -225,6 +243,12 @@ void copy(char *sourceName, char *destinationName, int howManyRecords, int buffe
     {
         int handler1 = open(sourceName, O_RDONLY);
         int handler2 = open(destinationName, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+	if (handler1 < 0 || handler2 < 0)
+	{
+		printf("File opening error\n");
+		exit(-1);
+	} 
 
         char* buffer = calloc(bufferSize, sizeof(char));
 

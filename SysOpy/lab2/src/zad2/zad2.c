@@ -22,7 +22,7 @@ char* operator;
 
 void printHelp()
 {
-    printf("Required arguments:\n\t- directory path\n\t- operator (< > =)\n\t- date (yyyy-mm-dd)\n\t- mode (0 1)");
+    printf("Required arguments:\n\t- directory path\n\t- operator (< > =)\n\t- date (yyyy-mm-dd)\n\t- mode (0 1)\n");
 }
 
 
