@@ -108,7 +108,7 @@ int parse(int argc, char** argv)
 
 void printHelp()
 {
-    printf("Possible arguments:\n\tfilePath");
+    printf("Possible arguments:\n\tfilePath\n\ttimeLimit\n\tmemoryLimit");
 }
 
 
