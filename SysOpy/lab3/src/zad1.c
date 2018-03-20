@@ -182,7 +182,7 @@ void dirInfo_stat(char* filePath)
 
         if((S_ISDIR(stats.st_mode)))
         {
-            pid_t childPID = fork();
+            pid_t childPID = vfork();
             if (childPID < 0)
             {
                 printf("Fork error");
