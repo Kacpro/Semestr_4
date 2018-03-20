@@ -19,6 +19,7 @@ void readAndExecute(char* fileName, int time, int memory)
 
     size_t bufSize = 100;
     char* buffer = calloc(bufSize, sizeof(char));
+    struct rlimit limits;
 
     while (getline(&buffer, &bufSize, file) != -1)
     {
@@ -51,22 +52,21 @@ void readAndExecute(char* fileName, int time, int memory)
         if (child < 0) exit(-1);
         else if (child == 0)
         {
-            struct rlimit limits;
-
-            limits.rlim_max = time;
-            limits.rlim_cur = RLIM_INFINITY;
+            limits.rlim_max = (rlim_t)time;
+            limits.rlim_cur = (rlim_t)time;//RLIM_INFINITY;
             setrlimit(RLIMIT_CPU, &limits);
 
-            limits.rlim_max = memory * 1048576;
-            limits.rlim_cur = RLIM_INFINITY;
+            limits.rlim_max = (rlim_t)memory * 1048576;
+            limits.rlim_cur = (rlim_t)memory * 1048576;//LIM_INFINITY;
             setrlimit(RLIMIT_AS, &limits);
+
 
             if (execvp(arguments[0], arguments) == -1)
             {
                 if (execv(basename(arguments[0]), arguments) == -1)
                 {
                     exit(-1);
-                }
+               }
             }
             exit(0);
         }
@@ -81,8 +81,13 @@ void readAndExecute(char* fileName, int time, int memory)
             }
             else
             {
-                printf("Resources:\tUser time: %f\tSystem time: %f\n\n", stats.ru_utime.tv_usec*1.0/1e6 + stats.ru_utime.tv_sec,
-                       stats.ru_stime.tv_usec*1.0/1e6 + stats.ru_stime.tv_sec);
+                if (WIFSIGNALED(result) != 0) printf("Killed by signal %d\n",WTERMSIG(result));
+                else
+                {
+                    printf("Resources:\tUser time: %f\tSystem time: %f\n\n",
+                           stats.ru_utime.tv_usec * 1.0 / 1e6 + stats.ru_utime.tv_sec,
+                           stats.ru_stime.tv_usec * 1.0 / 1e6 + stats.ru_stime.tv_sec);
+                }
             }
         }
 
@@ -108,7 +113,7 @@ int parse(int argc, char** argv)
 
 void printHelp()
 {
-    printf("Possible arguments:\n\tfilePath\n\ttimeLimit\n\tmemoryLimit");
+    printf("Possible arguments:\n\tfilePath timeLimit[s] memoryLimit[MB]");
 }
 
 
