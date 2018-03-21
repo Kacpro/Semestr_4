@@ -116,7 +116,7 @@ void generate(char* fileName, int numberOfRecords, int recordSize)
     for (int i=0; i<numberOfRecords; i++)
     {
         unsigned char* record = generateRandomString(recordSize);
-        fwrite(record, sizeof(unsigned char), recordSize, handler); //dodać sprawdzanie czy się zapisało
+        fwrite(record, sizeof(unsigned char), recordSize, handler);
     }
     fclose(handler);
 }
