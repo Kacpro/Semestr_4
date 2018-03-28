@@ -24,7 +24,7 @@ char* operator;
 
 void printHelp()
 {
-    printf("Required arguments:\n\t- directory path\n\t- operator (< > =)\n\t- date (yyyy-mm-dd)\n\t- mode (0 1)");
+    printf("Required arguments:\n\t- directory path\n\t- operator (< > =)\n\t- date (yyyy-mm-dd)\n\t- mode (0 1)\n");
 }
 
 
@@ -150,7 +150,7 @@ int fn(const char* fullPath, const struct stat* stats, int flagType, struct FTW*
 void dirInfo_nftw(char* filePath)
 {
     char path[1000];
-    nftw(realpath(filePath, path), fn, 1, FTW_PHYS);
+    nftw(realpath(filePath, path), fn, 20, FTW_PHYS);
 }
 
 

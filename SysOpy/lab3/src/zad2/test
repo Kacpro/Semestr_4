@@ -1,4 +1,3 @@
-sl -al
-sl
-ls -al
+ls -al ../
+gcd 12 8
 echo Kacper Janda

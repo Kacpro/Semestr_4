@@ -64,7 +64,7 @@ void readAndExecute(char* fileName)
             wait(&result);
             if (WIFEXITED(result) && WEXITSTATUS(result) != 0)
             {
-                printf("!!!Operation terminated!!!");
+                printf("!!!Operation terminated!!!\nError in: %s\n", arguments[0]);
                 exit(-1);
             }
         }
@@ -89,7 +89,7 @@ int parse(int argc, char** argv)
 
 void printHelp()
 {
-    printf("Possible arguments:\n\tfilePath");
+    printf("Possible arguments:\n\tfilePath\n");
 }
 
 
