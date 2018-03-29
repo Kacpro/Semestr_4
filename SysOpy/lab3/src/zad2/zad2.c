@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -50,9 +49,9 @@ void readAndExecute(char* fileName)
         if (child < 0) exit(-1);
         else if (child == 0)
         {
-            if (execvp(arguments[0], arguments) == -1)
+            if (execv(arguments[0], arguments) == -1)
             {
-                if (execv(basename(arguments[0]), arguments) == -1)
+                if (execvp(basename(arguments[0]), arguments) == -1)
                 {
                     exit(-1);
                 }
