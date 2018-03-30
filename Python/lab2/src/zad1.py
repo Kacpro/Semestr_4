@@ -79,6 +79,18 @@ def evaluate(expr):
     		print(val[:len(foo(expr))] + '  ' + str(value(onp(expr), val)))
 
 
+def isTautology(expr):
+    for val in gen(len(foo(expr))):
+        if value(onp(expr), val) == 0: return False
+    return True
+
+
+def areTheSame(expr1, expr2):
+    if foo(expr1) != foo(expr2): return False
+    for val in gen(len(foo(expr1))):
+        if value(onp(expr1), val) != value(onp(expr2), val): return False
+    return True
+
 
 evaluate('a&b|c')
 
