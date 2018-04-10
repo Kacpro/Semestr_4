@@ -20,12 +20,18 @@ void signalHandling(int sig)
             {
                 STOPPED = 1;
                 printf("\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakonczenie programu\n");
-                kill(CHILD, SIGSTOP);
+                kill(CHILD, SIGKILL);
             }
             else
             {
                 STOPPED = 0;
-                kill(CHILD, SIGCONT);
+                CHILD = fork();
+		if (CHILD < 0)
+		{
+			printf("Fork error");
+			exit(-1);
+		}
+		else if (CHILD == 0) execl("./script", "script", NULL);
             }
             break;
         }
@@ -62,28 +68,10 @@ int main()
         sigemptyset(&act.sa_mask);
         act.sa_flags = 0;
         sigaction(SIGINT, &act, NULL);
-
-        wait(NULL);
+	wait(NULL);
     }
     else if (CHILD == 0)
     {
-        pid_t child2;
-        while (1)
-        {
-            if ((child2 = fork()) == 0)
-            {
-                execlp("date", "date", "+%H:%M:%S", NULL);
-            }
-            else if (child2 < 0)
-            {
-                printf("Fork error");
-                exit(-1);
-            }
-            else
-            {
-                wait(NULL);
-                sleep(1);
-            }
-        }
+    	execl("./script", "script", NULL);
     }
 }
