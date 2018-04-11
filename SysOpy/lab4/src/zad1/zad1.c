@@ -68,7 +68,7 @@ int main()
         sigemptyset(&act.sa_mask);
         act.sa_flags = 0;
         sigaction(SIGINT, &act, NULL);
-	wait(NULL);
+	while(1);
     }
     else if (CHILD == 0)
     {
