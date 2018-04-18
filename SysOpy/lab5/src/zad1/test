@@ -1,0 +1,5 @@
+cat /etc/passwd | grep oo
+echo Ala | echo Ma | echo Kota
+date
+ls -al | wc
+

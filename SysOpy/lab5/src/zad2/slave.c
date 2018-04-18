@@ -29,9 +29,9 @@ void slavLogic(char* fifoName, int N)
 
         sleep(rand()%(4) + 2);
     }
-    fifo = fopen(fifoName, "w");
-    fwrite("\n\n", sizeof(char), 5, fifo);
-    fclose(fifo);
+ //   fifo = fopen(fifoName, "w");
+ //   fwrite("\n\n", sizeof(char), 5, fifo);
+ //   fclose(fifo);
 }
 
 

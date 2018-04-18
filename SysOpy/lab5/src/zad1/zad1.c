@@ -3,10 +3,12 @@
 #include <memory.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <sys/types.h>
+       #include <sys/wait.h>
 
 
 char** prepareArguments(char *program, char* separator, int asciiz, int* length)
-{
+{  
     char **arguments = NULL;
     char *p = strtok(program, separator);
     int n_spaces = 0;
@@ -15,9 +17,9 @@ char** prepareArguments(char *program, char* separator, int asciiz, int* length)
     {
         arguments = realloc(arguments, sizeof(char *) * ++n_spaces);
         if (arguments == NULL) exit(-1);
-
+  
         arguments[n_spaces - 1] = p;
-        p = strtok(NULL, separator);
+        p = strtok(NULL, separator); 
     }
 
     if (asciiz)                                 // adding NULL at the end
@@ -25,9 +27,16 @@ char** prepareArguments(char *program, char* separator, int asciiz, int* length)
         arguments = realloc(arguments, sizeof(char *) * (n_spaces + 1));
         arguments[n_spaces] = 0;
     }
-
-    for (int i = 0; i <= n_spaces; i++)         // deleting newlines
-        strtok(arguments[i], "\n");
+ 
+    for (int i = 0; i < n_spaces; i++)         // deleting newlines
+	if (strchr(arguments[i], '\n') != NULL)
+	{ 
+		char* buf = calloc(strlen(arguments[i])+1, sizeof(char));
+		for (int j=0; j<strlen(arguments[i])-1; j++)
+			buf[j] = arguments[i][j];		
+	        buf[strlen(arguments[i])-1] = '\0';
+		arguments[i] = buf;
+	}
 
     if (length != NULL) *length = n_spaces;
     return arguments;
@@ -43,15 +52,19 @@ void readAndExecute(char* fileName)
         printf("File opening error");
         exit(-1);
     }
+   
 
     size_t bufSize = 100;
     char* buffer = calloc(bufSize, sizeof(char));
 
+  
 
     while (getline(&buffer, &bufSize, file) != -1)
     {
         int n_spaces2;
+
         char** programs = prepareArguments(buffer, "|", 0, &n_spaces2);
+	
 
         int **fd = calloc(n_spaces2 - 1, sizeof(int *));
         for (int i = 0; i < n_spaces2 - 1; i++)
@@ -60,13 +73,15 @@ void readAndExecute(char* fileName)
             pipe(fd[i]);
         }
 
+
         for (int i=0; i<n_spaces2; i++)
         {
+
             char **arguments = prepareArguments(programs[i], " ", 1, NULL);
 
             int result = 0;
 
-            pid_t child = vfork();
+            pid_t child = fork();
 
             if (child < 0) exit(-1);
             else if (child == 0)
@@ -85,17 +100,19 @@ void readAndExecute(char* fileName)
 
                 }
 
+
+
                 if (execv(arguments[0], arguments) == -1)
-                {
-                    if (execvp(basename(arguments[0]), arguments) == -1)
+                {                    
+		    if (execvp(basename(arguments[0]), arguments) == -1)
                     {
-                        exit(-1);
+				exit(-1);
                     }
                 }
             }
             else
-            {
-                usleep(1000);                   // for aesthetic purpose only
+            {          
+//		usleep(1000);
                 if (WIFEXITED(result) && WEXITSTATUS(result) != 0)
                 {
                     printf("!!!Operation terminated!!!\nError in: %s\n", arguments[0]);
@@ -107,6 +124,7 @@ void readAndExecute(char* fileName)
         free(programs);
     }
 
+
     free(buffer);
     fclose(file);
 }
@@ -116,7 +134,7 @@ void readAndExecute(char* fileName)
 int parse(int argc, char** argv)
 {
     if (argc != 2) return -1;
-    char* fileName = argv[1];
+    char* fileName = argv[1]; 
     readAndExecute(fileName);
     return 0;
 }
