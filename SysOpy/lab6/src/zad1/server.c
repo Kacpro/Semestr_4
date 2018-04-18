@@ -85,6 +85,12 @@ void receive(int queue)
                 break;
             }
 
+            case MIRROR:
+            {
+                printf("mirror\n");
+                break;
+            }
+
             default:
             {
                 printf("Unknown msg type\n");
