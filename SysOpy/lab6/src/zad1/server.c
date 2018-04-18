@@ -162,7 +162,7 @@ void receive(int queue)
             case MIRROR:
             {
                 printf("mirror\t%d\t%s", msg.pid, getDate());
-                char* result = calloc(strlen(msg.mtext + 1), sizeof(char));
+                char* result = calloc(strlen(msg.mtext) + 1, sizeof(char));
 
                 for (int i=strlen(msg.mtext) - 1; i>=0; i--)
                 {
