@@ -42,25 +42,21 @@ struct msgbuf {
 key_t connect(struct queueInfo info)
 {
     key_t key = ftok("/home", KEY_CHAR);
-    printf("%d\n", key);
     int queue = msgget(key, 0);
-    perror(NULL);
     struct msgbuf msg;
     msg.mtype = INIT;
     msg.pid = getpid();
     msg.key = info.key;
     msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
-    perror(NULL);
 
     while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
-    perror(NULL);
-    printf("Connected! ID = %d %d\n ", msg.mtype, info.queue);
+    printf("Connected!\tQueueID = %d\n", info.queue);
     return key;
 }
 
 
 
-void sendMessages(FILE* fd, key_t key)
+void sendMessages(FILE* fd, key_t key, struct queueInfo info)
 {
     int queue = msgget(key, 0);
     struct msgbuf msg;
@@ -75,21 +71,22 @@ void sendMessages(FILE* fd, key_t key)
         getline(&buffer, &length, fd);
 
         arguments[0] = strtok(buffer, " \n");
-        arguments[1] = strtok(buffer, " \n");
+        arguments[1] = strtok(NULL, "\n");
 
         if (arguments[0] == NULL) continue;
 
 
         if (!strcmp(arguments[0], "TIME"))
         {
-            printf("time\n");
             msg.mtype = TIME;
             msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
+
+            while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
+            printf("%s", msg.mtext);
         }
 
         else if (!strcmp(arguments[0], "END"))
         {
-            printf("end\n");
             msg.mtype = END;
             msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
             break;
@@ -97,18 +94,24 @@ void sendMessages(FILE* fd, key_t key)
 
         else if (!strcmp(arguments[0], "CALC"))
         {
-            printf("calc\n");
             msg.mtype = CALC;
             strcpy(msg.mtext, arguments[1]);
             msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
+
+
+            while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
+            printf("%s\n", msg.mtext);
+
         }
 
         else if (!strcmp(arguments[0], "MIRROR"))
         {
-            printf("mirror\n");
             msg.mtype = MIRROR;
             strcpy(msg.mtext, arguments[1]);
             msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
+
+            while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
+            printf("%s\n", msg.mtext);
         }
     }
 }
@@ -121,12 +124,12 @@ void sender(int argc, char** argv)
 
     if (argc == 1)
     {
-        sendMessages(stdin, key);
+        sendMessages(stdin, key, info);
     }
     else
     {
         FILE* file = fopen(argv[1], "r");
-        sendMessages(file, key);
+        sendMessages(file, key, info);
     }
 }
 
