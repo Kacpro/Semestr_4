@@ -7,6 +7,7 @@
 #include <time.h>
 #include <string.h>
 #include <sys/shm.h>
+#include <unistd.h>
 
 #include "properties.h"
 
@@ -16,9 +17,6 @@ int init()
 {
     key_t key = ftok("/home", KEY_CHAR);
     int queue = msgget(key, IPC_CREAT | 0622);
- //   struct shmid_ds stats;
- //   shmctl(queue, IPC_RMID, &stats);
- //   perror("init");
     return queue;
 }
 
@@ -68,10 +66,11 @@ void receive(int queue)
 
     while (1)
     {
-        msgrcv(queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR);
+        msg.mtype = 0;
+        msgrcv(queue, &msg, MAX_MSG_LENGTH, 0,  IPC_NOWAIT);
         if (!msg.mtype && closeFlag) break;
         if (!msg.mtype) continue;
-
+        usleep(10000);
 
         switch(msg.mtype)
         {
@@ -82,7 +81,7 @@ void receive(int queue)
                 int clientQueue = msgget(msg.key, 0);
 
                 clientID++;
-                realloc(clients, sizeof(struct client) * clientID);
+                clients = realloc(clients, sizeof(struct client) * clientID);
                 clients[clientID - 1].pid = msg.pid;
                 clients[clientID - 1].queue = clientQueue;
                 clients[clientID - 1].clientID = clientID;
@@ -157,6 +156,7 @@ void receive(int queue)
             {
                 printf("end\t%d\t%s", msg.pid, getDate());
                 closeFlag = 1;
+                break;
             }
 
             case MIRROR:
@@ -185,6 +185,8 @@ void receive(int queue)
             }
         }
     }
+ //   struct msqid_ds *buf;
+    msgctl(queue, IPC_RMID, NULL);
 }
 
 

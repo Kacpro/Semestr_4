@@ -89,6 +89,8 @@ void sendMessages(FILE* fd, key_t key, struct queueInfo info)
         {
             msg.mtype = END;
             msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
+  //          struct msqid_ds *buf = NULL;
+            msgctl(info.queue, IPC_RMID, NULL);
             break;
         }
 
