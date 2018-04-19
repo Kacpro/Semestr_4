@@ -151,7 +151,6 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 
         printf("arg1: %s\n", arguments[1]);
 
-        char* dupa = arguments[1];
 
         if (arguments[0] == NULL) continue;
 
@@ -242,21 +241,33 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 //            strcpy(msg.mtext, arguments[1]);
 //            msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
 
+            char* senderBuf = calloc(MAX_MSG_LENGTH, sizeof(char));
+            strcpy(senderBuf, bufferCopy);
+
             snprintf(mode, 2, "%d", MIRROR);
-            strcat(bufferCopy, mode);
+
+            printf("mode: %s\n",mode);
 
 
 
-            strcat(bufferCopy, "|");
-            strcat(bufferCopy, queue);
-            strcat(bufferCopy, "|");
-            strcat(bufferCopy, arguments[1]);
-            mq_send(serverQueue, bufferCopy, MAX_MSG_LENGTH, 3);
+            strcpy(senderBuf, mode);
+            strcat(senderBuf, "|");
+            strcat(senderBuf, queue);
+            strcat(senderBuf, "|");
+            strcat(senderBuf, arguments[1]);
+            printf("buffer: %s\n", senderBuf);
+
+            mq_send(serverQueue, senderBuf, MAX_MSG_LENGTH, 3);
 
  //           while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
  //           printf("%s\n", msg.mtext);
-            while (!mq_receive(info.queue, bufferCopy, MAX_MSG_LENGTH, NULL));
-            printf("%s\n", bufferCopy+22*sizeof(char));
+            while (!mq_receive(info.queue, senderBuf, MAX_MSG_LENGTH, NULL));
+
+            strtok(senderBuf, "|");
+            strtok(NULL, "|");
+            printf("%s\n", strtok(NULL, "\n"));
+
+            free(senderBuf);
         }
 
         free(bufferCopy);

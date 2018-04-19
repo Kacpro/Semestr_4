@@ -271,9 +271,14 @@ void receive(mqd_t que)
             {
                 printf("mirror\t%s", getDate());
 
-                strtok(buffer, "|");
+                char bufferCopy[MAX_MSG_LENGTH];
+                strcpy(bufferCopy, buffer);
+
+                char senderBuf[MAX_MSG_LENGTH];
+
+                strtok(bufferCopy, "|");
                 strtok(NULL, "|");
-                char* sentence = strtok(NULL, "|");
+                char* sentence = strtok(NULL, "\n");
 
                 char* result = calloc(strlen(sentence) + 1, sizeof(char));
 
@@ -288,12 +293,12 @@ void receive(mqd_t que)
  //               msgsnd(clientQueue, &msg, MAX_MSG_LENGTH, 0);
 
                 snprintf(mode, 2, "%d", MIRROR);
-                strcat(buffer, mode);
-                strcat(buffer, "|");
-                strcat(buffer, serverQueue);
-                strcat(buffer, "|");
-                strcat(buffer, result);
-                mq_send(clientQueue, buffer, MAX_MSG_LENGTH, 3);
+                strcpy(senderBuf, mode);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, serverQueue);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, result);
+                mq_send(clientQueue, senderBuf, MAX_MSG_LENGTH, 3);
 
 
                 free(result);
