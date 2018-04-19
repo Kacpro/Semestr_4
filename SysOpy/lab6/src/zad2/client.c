@@ -5,6 +5,7 @@
 #include <time.h>
 #include <string.h>
 #include <mqueue.h>
+#include <unistd.h>
 
 
 #include "properties.h"
@@ -17,106 +18,80 @@ struct queueInfo
     mqd_t queue;
 };
 
+
+
 char* getRandomName()
 {
     int length = rand()%10 + 5;
     char* word = calloc(length + 2, sizeof(char));
+
     for (int i=1; i<length; i++)
-        word[i] = (char)(rand()%(122-97) + 97);
+    {
+        word[i] = (char) (rand() % ('z' - 'a') + 'a');
+    }
+
     word[length] = '\0';
     word[0] = '/';
+
     return word;
 }
+
+
 
 struct queueInfo init()
 {
     srand(time(0));
-    perror("init");
-//    key_t key = ftok("/home", (char)rand()%(256));
-//    int queue = msgget(key, IPC_CREAT | 0622);
 
+    char* name = getRandomName();
     struct mq_attr stats;
     stats.mq_msgsize = MAX_MSG_LENGTH;
     stats.mq_flags = 0;
     stats.mq_curmsgs = 0;
     stats.mq_maxmsg = 10;
 
-    char* name = getRandomName();
-    printf("name: %s\n", name);
     mqd_t queue = mq_open(name, O_RDWR | O_CREAT, 0666, &stats);
-    struct queueInfo info = {name, queue};
-    perror("init end");
 
-    mq_getattr(queue, &stats);
-    printf("%ld\n", stats.mq_msgsize);
+    struct queueInfo info = {name, queue};
+
     return info;
 }
 
 
-//struct msgbuf {
-//    long mtype;
-//    pid_t pid;
-//    int key;
-//    char mtext[MAX_MSG_LENGTH];
-//};
+
+char* prepareMessage(int mode, char* queueName, char* arg)
+{
+    char* senderBuf = calloc(MAX_MSG_LENGTH, sizeof(char));
+    char* modeString = calloc(2, sizeof(char));
+
+    snprintf(modeString, 2, "%d", mode);
+    strcpy(senderBuf, modeString);
+    strcat(senderBuf, "|");
+    strcat(senderBuf, queueName);
+    strcat(senderBuf, "|");
+    strcat(senderBuf, arg);
+
+    free(modeString);
+    return senderBuf;
+}
 
 
 
 mqd_t connect(struct queueInfo info)
 {
-//    key_t key = ftok("/home", KEY_CHAR);
-//    int queueName = msgget(key, 0);
-//    struct msgbuf msg;
-//    msg.mtype = INIT;
-//    msg.pid = getpid();
-//    msg.key = info.key;
-//    msgsnd(queueName, &msg, MAX_MSG_LENGTH, 0);
-
-//    while(!msgrcv(info.queueName, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
-//    printf("Connected!\tQueueID = %d\n", info.queueName);
-//    return key;
-
-    perror("connect start");
-
     struct mq_attr stats;
     stats.mq_msgsize = MAX_MSG_LENGTH;
     stats.mq_flags = 0;
     stats.mq_curmsgs = 0;
-    stats.mq_maxmsg = 20;
+    stats.mq_maxmsg = 10;
 
     mqd_t serverQueue = mq_open(SERVER, O_WRONLY, 0666, &stats);
-
-    mq_getattr(serverQueue, &stats);
-    printf("%ld\n", stats.mq_msgsize);
-
     char buf[MAX_MSG_LENGTH];
-    char mode[2];
-    char* clientQueueName = calloc(20, sizeof(char));
 
-    snprintf(mode, 2, "%d", INIT);
-    snprintf(clientQueueName, 20, "%s", info.name);
+    mq_send(serverQueue, prepareMessage(INIT, info.name, ""), MAX_MSG_LENGTH, 3);
 
-    printf("%d\n", info.queue);
-
-    strcpy(buf, mode);
-    strcat(buf, "|");
-    strcat(buf, clientQueueName);
-    strcat(buf, "|");
-
-    printf("buf: %s\n", buf);
-
-    perror("connect");
-
-    if (mq_send(serverQueue, buf, MAX_MSG_LENGTH, 3) == -1)
-    {
-        perror("error");
-        printf("Problem with sending msg to server");
-        exit(-1);
-    };
     while (!mq_receive(info.queue, buf, MAX_MSG_LENGTH, NULL));
-    printf("Connected!\tQueueID = %d\n", info.queue);
+    printf("Connected!\n");
 
-    perror("connect end");
     return serverQueue;
 }
 
@@ -124,23 +99,15 @@ mqd_t connect(struct queueInfo info)
 
 void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 {
-//    int queue = msgget(key, 0);
-//    struct msgbuf msg;
-//    msg.pid = getpid();
-//    msg.key = 0;
-//    char* buffer = calloc(MAX_MSG_LENGTH, sizeof(char));
-//    buffer = buffer;
-
     size_t length = MAX_MSG_LENGTH;
     char* arguments[2];
-    char mode[2];
 
     char queue[20];
     snprintf(queue, 20, "%s", info.name);
 
     while(1)
     {
-        char* buffer = calloc(MAX_MSG_LENGTH, sizeof(char));        //free
+        char* buffer = calloc(MAX_MSG_LENGTH, sizeof(char));
         getline(&buffer, &length, fd);
 
         char* bufferCopy = calloc(MAX_MSG_LENGTH, sizeof(char));
@@ -149,29 +116,12 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
         arguments[0] = strtok(bufferCopy, " \n");
         arguments[1] = strtok(NULL, "\n");
 
-        printf("arg1: %s\n", arguments[1]);
-
-
         if (arguments[0] == NULL) continue;
 
 
         if (!strcmp(arguments[0], "TIME"))
         {
-            perror("time start");
-//            msg.mtype = TIME;
-//            msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
-            snprintf(mode, 2, "%d", TIME);
-            strcpy(bufferCopy, mode);
-            strcat(bufferCopy, "|");
-            strcat(bufferCopy, queue);
-            strcat(bufferCopy, "|");
-
-            printf("buffer: %s\n", bufferCopy);
-
-            mq_send(serverQueue, bufferCopy, MAX_MSG_LENGTH, 3);
-
-//            while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
-//            printf("%s", msg.mtext);
+            mq_send(serverQueue, prepareMessage(TIME, info.name, ""), MAX_MSG_LENGTH, 3);
 
             while (!mq_receive(info.queue, bufferCopy, MAX_MSG_LENGTH, NULL));
 
@@ -182,19 +132,9 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 
         else if (!strcmp(arguments[0], "END"))
         {
-//            msg.mtype = END;
-//            msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
-            //          struct msqid_ds *buf = NULL;
-            snprintf(mode, 2, "%d", END);
-            strcat(bufferCopy, mode);
-            strcat(bufferCopy, "|");
-            strcat(bufferCopy, queue);
-            strcat(bufferCopy, "|");
-            mq_send(serverQueue, bufferCopy, MAX_MSG_LENGTH, 3);
+            mq_send(serverQueue, prepareMessage(END, info.name, ""), MAX_MSG_LENGTH, 3);
 
-
-//            msgctl(info.queue, IPC_RMID, NULL);
-            while (!mq_receive(info.queue, bufferCopy, MAX_MSG_LENGTH, NULL));
+            usleep(100);
 
             mq_close(info.queue);
             mq_unlink(info.name);
@@ -204,26 +144,9 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 
         else if (!strcmp(arguments[0], "CALC"))
         {
-//            msg.mtype = CALC;
-//            strcpy(msg.mtext, arguments[1]);
-//            msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
-
-            snprintf(mode, 2, "%d", CALC);
-
             char* senderBuf = calloc(MAX_MSG_LENGTH, sizeof(char));
-            strcpy(senderBuf, bufferCopy);
 
-            strcpy(senderBuf, mode);
-
-            printf("buffer: %s\n", senderBuf);
-
-            strcat(senderBuf, "|");
-            strcat(senderBuf, queue);
-            strcat(senderBuf, "|");
-
-            strcat(senderBuf, arguments[1]);
-            mq_send(serverQueue, senderBuf, MAX_MSG_LENGTH, 3);
-
+            mq_send(serverQueue, prepareMessage(CALC, info.name, arguments[1]), MAX_MSG_LENGTH, 3);
 
             while (!mq_receive(info.queue, senderBuf, MAX_MSG_LENGTH, NULL));
 
@@ -237,30 +160,10 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
 
         else if (!strcmp(arguments[0], "MIRROR"))
         {
-//            msg.mtype = MIRROR;
-//            strcpy(msg.mtext, arguments[1]);
-//            msgsnd(queue, &msg, MAX_MSG_LENGTH, 0);
-
             char* senderBuf = calloc(MAX_MSG_LENGTH, sizeof(char));
-            strcpy(senderBuf, bufferCopy);
 
-            snprintf(mode, 2, "%d", MIRROR);
+            mq_send(serverQueue, prepareMessage(MIRROR, info.name, arguments[1]), MAX_MSG_LENGTH, 3);
 
-            printf("mode: %s\n",mode);
-
-
-
-            strcpy(senderBuf, mode);
-            strcat(senderBuf, "|");
-            strcat(senderBuf, queue);
-            strcat(senderBuf, "|");
-            strcat(senderBuf, arguments[1]);
-            printf("buffer: %s\n", senderBuf);
-
-            mq_send(serverQueue, senderBuf, MAX_MSG_LENGTH, 3);
-
- //           while(!msgrcv(info.queue, &msg, MAX_MSG_LENGTH, 0, MSG_NOERROR));
- //           printf("%s\n", msg.mtext);
             while (!mq_receive(info.queue, senderBuf, MAX_MSG_LENGTH, NULL));
 
             strtok(senderBuf, "|");
@@ -270,6 +173,7 @@ void sendMessages(FILE* fd, mqd_t serverQueue, struct queueInfo info)
             free(senderBuf);
         }
 
+        free(buffer);
         free(bufferCopy);
     }
 }
