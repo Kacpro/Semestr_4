@@ -86,34 +86,48 @@ void receive(mqd_t que)
     while (1)
     {
 //        msg.mtype = 0;
-//        msgrcv(queue, &msg, MAX_MSG_LENGTH, 0,  IPC_NOWAIT);
+//        msgrcv(serverQueue, &msg, MAX_MSG_LENGTH, 0,  IPC_NOWAIT);
 //        if (!msg.mtype && closeFlag) break;
 //        if (!msg.mtype) continue;
         perror("rec start");
    //     char* buffer = calloc(MAX_MSG_LENGTH, sizeof(char));            //free
 
-        char buffer[MAX_MSG_LENGTH];
+        char* buffer = calloc(MAX_MSG_LENGTH, sizeof(char));
         mq_receive(que, buffer, MAX_MSG_LENGTH, NULL);
         perror("rec");
+        printf("buf: %s\n", buffer);
+
+        char bufferCopy[MAX_MSG_LENGTH];
+        strcpy(bufferCopy, buffer);
 
 
+        struct mq_attr stats;
+        stats.mq_msgsize = MAX_MSG_LENGTH;
+        stats.mq_flags = 0;
+        stats.mq_curmsgs = 0;
+        stats.mq_maxmsg = 20;
 
-        strtok(buffer, "|");
-        mqd_t clientQueue = atoi(strtok(NULL, "|"));
+
+        strtok(bufferCopy, "|");
+        char* clientQueueName = strtok(NULL, "|");
+        mqd_t clientQueue = mq_open(clientQueueName, O_WRONLY, 0644, &stats);
+        mq_getattr(clientQueue, &stats);
+        printf("%ld\n", stats.mq_msgsize);
 
         usleep(10000);
 
         char mode[2];
 
-        char queue[20];
-        snprintf(queue, 20, "%d", que);
+        char serverQueue[20];
+        snprintf(serverQueue, 20, "%d", que);
 
-        printf("buf: %s", buffer);
+        printf("buf: %s\n", buffer);
 
         switch(buffer[0] - '1' + 1)
         {
             case INIT:
             {
+                perror("init start");
                 printf("init\t%s", getDate());
 
 //                int clientQueue = msgget(msg.key, 0);
@@ -121,18 +135,23 @@ void receive(mqd_t que)
 //                clientID++;
 //                clients = realloc(clients, sizeof(struct client) * clientID);
 //                clients[clientID - 1].pid = msg.pid;
-//                clients[clientID - 1].queue = clientQueue;
+//                clients[clientID - 1].serverQueue = clientQueue;
 //                clients[clientID - 1].clientID = clientID;
 
 //                msg.mtype = clientID;
 //                msgsnd(clientQueue, &msg, MAX_MSG_LENGTH, 0);
-                snprintf(mode, 2, "%d", INIT);
-                strcat(buffer, mode);
-                strcat(buffer, "|");
-                strcat(buffer, queue);
-                strcat(buffer, "|");
-                mq_send(clientQueue, buffer, MAX_MSG_LENGTH, 3);
+                char senderBuf[MAX_MSG_LENGTH];
 
+                snprintf(mode, 2, "%d", INIT);
+                strcpy(senderBuf, mode);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, SERVER);
+                strcat(senderBuf, "|");
+
+                printf("%s\n",clientQueueName);
+                mq_send(clientQueue,  senderBuf, MAX_MSG_LENGTH, 3);
+
+                perror("init end");
                 break;
             }
 
@@ -141,13 +160,25 @@ void receive(mqd_t que)
                 printf("calc\t%s", getDate());
                 int numbers[2];
 
-                strtok(buffer, "|");
+                char bufferCopy[MAX_MSG_LENGTH];
+  //              char* bufferCopy = calloc(MAX_MSG_LENGTH, sizeof(char));
+                strcpy(bufferCopy, buffer);
+
+                char senderBuf[MAX_MSG_LENGTH];
+//                char* senderBuf = calloc(MAX_MSG_LENGTH, sizeof(char));
+
+                perror("calc1");
+                printf("bufCpy: %s\n", bufferCopy);
+
+                strtok(bufferCopy, "|");
                 strtok(NULL, "|");
-                char* expression = strtok(NULL, "|");
+                char* expression = strtok(NULL, "\n");
 
                 char op = *(strpbrk(expression, "+-/*"));
                 numbers[0] = atoi(strtok(expression, " +-*/\n"));
                 numbers[1] = atoi(strtok(NULL, "\n"));
+
+                perror("calc1");
 
 
                 double result;
@@ -185,12 +216,12 @@ void receive(mqd_t que)
 //                msgsnd(clientQueue, &msg, MAX_MSG_LENGTH, 0);
 
                 snprintf(mode, 2, "%d", CALC);
-                strcat(buffer, mode);
-                strcat(buffer, "|");
-                strcat(buffer, queue);
-                strcat(buffer, "|");
-                strcat(buffer, out);
-                mq_send(clientQueue, buffer, MAX_MSG_LENGTH, 3);
+                strcpy(senderBuf, mode);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, serverQueue);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, out);
+                mq_send(clientQueue, senderBuf, MAX_MSG_LENGTH, 3);
 
 
 
@@ -199,23 +230,28 @@ void receive(mqd_t que)
 
             case TIME:
             {
-                printf("time\t%s",  getDate());
-                time_t now;
-                time(&now);
+                perror("time");
+                printf("time\t%s\n",  getDate());
+//                time_t now;
+//                time(&now);
+
+                char senderBuf[MAX_MSG_LENGTH];
 
 //                int clientQueue = getQueue(msg.pid, clients, clientID);
 
-                char out[20];
-                snprintf(out, MAX_MSG_LENGTH, "%s", ctime(&now));
+                char out[40];
+                snprintf(out, MAX_MSG_LENGTH, "%s", getDate());
 //                msgsnd(clientQueue, &msg, MAX_MSG_LENGTH, 0);
 
                 snprintf(mode, 2, "%d", TIME);
-                strcat(buffer, mode);
-                strcat(buffer, "|");
-                strcat(buffer, queue);
-                strcat(buffer, "|");
-                strcat(buffer, out);
-                mq_send(clientQueue, buffer, MAX_MSG_LENGTH, 3);
+                strcpy(senderBuf, mode);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, serverQueue);
+                strcat(senderBuf, "|");
+                strcat(senderBuf, out);
+                printf("sender: %s\n", senderBuf);
+
+                mq_send(clientQueue, senderBuf, MAX_MSG_LENGTH, 3);
 
                 break;
             }
@@ -254,7 +290,7 @@ void receive(mqd_t que)
                 snprintf(mode, 2, "%d", MIRROR);
                 strcat(buffer, mode);
                 strcat(buffer, "|");
-                strcat(buffer, queue);
+                strcat(buffer, serverQueue);
                 strcat(buffer, "|");
                 strcat(buffer, result);
                 mq_send(clientQueue, buffer, MAX_MSG_LENGTH, 3);
@@ -269,7 +305,9 @@ void receive(mqd_t que)
                 printf("Unknown msg type\n");
                 exit(-1);
             }
+
         }
+        free(buffer);
     }
     //   struct msqid_ds *buf;
 //    msgctl(queue, IPC_RMID, NULL);
