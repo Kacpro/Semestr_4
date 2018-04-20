@@ -23,7 +23,7 @@ struct queueInfo
 struct queueInfo init()
 {
     srand(time(0));
-    key_t key = ftok("/home", (char)rand()%(256));
+    key_t key = ftok(getenv("HOME"), (char)rand()%(256));
     int queue = msgget(key, IPC_CREAT | 0622);
     struct queueInfo info = {key, queue};
     return info;
@@ -41,7 +41,7 @@ struct msgbuf {
 
 key_t connect(struct queueInfo info)
 {
-    key_t key = ftok("/home", KEY_CHAR);
+    key_t key = ftok(getenv("HOME"), KEY_CHAR);
     int queue = msgget(key, 0);
     struct msgbuf msg;
     msg.mtype = INIT;

@@ -15,7 +15,7 @@
 
 int init()
 {
-    key_t key = ftok("/home", KEY_CHAR);
+    key_t key = ftok(getenv("HOME"), KEY_CHAR);
     int queue = msgget(key, IPC_CREAT | 0622);
     return queue;
 }
