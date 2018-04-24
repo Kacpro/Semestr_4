@@ -7,6 +7,7 @@
 #include <sys/msg.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <time.h>
 
 
 struct data
@@ -24,6 +25,14 @@ int semSet;
 int queue;
 int commonMemory;
 
+
+long getTime()
+{
+    struct timespec times;
+
+    clock_gettime(CLOCK_MONOTONIC, &times);
+    return times.tv_nsec;
+}
 
 
 struct pids
@@ -63,7 +72,7 @@ void clientLogic(int numberOfShaves)
         if (cMemPtr->barberIsSleeping == 1)
         {
             cMemPtr->barberIsSleeping = 0;
-            printf("Client wakes the barber up\n");
+            printf("Client wakes the barber up\t\t\t%d\t%ld\n", getpid(), getTime());
             msgsnd(queue, &msg, 10, 0);
 
             cMemPtr->nextPid = getpid() * (i+1);
@@ -78,7 +87,7 @@ void clientLogic(int numberOfShaves)
             sops[0].sem_op = -1;
             semop(semSet, sops, 1);
 
-            printf("Client sits on the shaving chair\n");
+            printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 2;
 
 
@@ -90,7 +99,7 @@ void clientLogic(int numberOfShaves)
             sops[0].sem_op = -1;
             semop(semSet, sops, 1);
 
-            printf("Client leaves shaved\n");
+            printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 0;
 
             sops[0].sem_num = 0;
@@ -101,7 +110,7 @@ void clientLogic(int numberOfShaves)
         {
             cMemPtr->waitingClients++;
             msgsnd(queue, &msg, 10, 0);
-            printf("Client sits in the waiting room\n");
+            printf("Client sits in the waiting room\t\t\t%d\t%ld\n", getpid(), getTime());
 
             sops[0].sem_num = 0;
             sops[0].sem_op = 1;
@@ -113,7 +122,7 @@ void clientLogic(int numberOfShaves)
             sops[0].sem_op = -1;
             semop(semSet, sops, 1);
 
-            printf("Client sits on the shaving chair\n");
+            printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 1;
 
             sops[0].sem_num = 0;
@@ -127,7 +136,7 @@ void clientLogic(int numberOfShaves)
             sops[0].sem_op = -1;
             semop(semSet, sops, 1);
 
-            printf("Client leaves shaved\n");
+            printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 0;
 
             sops[0].sem_num = 0;
@@ -137,7 +146,7 @@ void clientLogic(int numberOfShaves)
         }
         else
         {
-            printf("Client leaves due to the lack of free chairs\n");
+            printf("Client leaves due to the lack of free chairs\t%d\t%ld\n", getpid(), getTime());
             sops[0].sem_num = 0;
             sops[0].sem_op = 1;
             semop(semSet, sops, 1);
