@@ -1,13 +1,15 @@
 
 #include <sys/param.h>
 #include <sys/sem.h>
-#include <sys/shm.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/msg.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <semaphore.h>
 
 
 struct data
@@ -21,7 +23,7 @@ struct data
 
 
 struct data* cMemPtr;
-int semSet;
+sem_t* sem;
 int queue;
 int commonMemory;
 
@@ -62,9 +64,7 @@ void clientLogic(int numberOfShaves)
     {
         while(cMemPtr->clientStatus != -1);
 
-        sops[0].sem_num = 0;
-        sops[0].sem_op = -1;
-        semop(semSet, sops, 1);
+        sem_wait(sem);
 
         msg.pid.code = getpid()*(i+1);
         msg.pid.pid = getpid();
@@ -77,34 +77,22 @@ void clientLogic(int numberOfShaves)
 
             cMemPtr->nextPid = getpid() * (i+1);
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
+            sem_post(sem);
             while(cMemPtr->clientStatus != 1 || cMemPtr->nextPid != getpid()*(i+1));
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
+            sem_wait(sem);
 
             printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 2;
 
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
+            sem_post(sem);
             while(cMemPtr->clientStatus != 3 || cMemPtr->nextPid != getpid()*(i+1));
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
+            sem_wait(sem);
 
             printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 0;
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
+            sem_post(sem);
+
         }
         else if (cMemPtr->queueLength > cMemPtr->waitingClients)
         {
@@ -112,44 +100,28 @@ void clientLogic(int numberOfShaves)
             msgsnd(queue, &msg, 10, 0);
             printf("Client sits in the waiting room\t\t\t%d\t%ld\n", getpid(), getTime());
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
+            sem_post(sem);
             while(cMemPtr->nextPid != getpid()*(i+1));
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
+            sem_wait(sem);
 
             printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
-            cMemPtr->clientStatus = 1;
+            cMemPtr->clientStatus = 2;
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
-
-            while(cMemPtr->clientStatus != 2 || cMemPtr->nextPid != getpid()*(i+1));
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
+            sem_post(sem);
+            while(cMemPtr->clientStatus != 3 || cMemPtr->nextPid != getpid()*(i+1));
+            sem_wait(sem);
 
             printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
             cMemPtr->clientStatus = 0;
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
+            sem_post(sem);
         }
         else
         {
             printf("Client leaves due to the lack of free chairs\t%d\t%ld\n", getpid(), getTime());
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
+
+            sem_post(sem);
+
         }
     }
     exit(0);
@@ -173,11 +145,14 @@ void makeChildren(int numOfClients, int numOfShaves)
 
 int main(int argc, char** argv)
 {
+    commonMemory = shm_open("mem", O_RDWR, 0622);
+    ftruncate(commonMemory, sizeof(struct data));
+    cMemPtr = mmap(NULL, sizeof(struct data), PROT_READ | PROT_WRITE, MAP_SHARED, commonMemory, 0);
+
     key_t key = ftok(getenv("HOME"), 'c');
-    commonMemory = shmget(key, 0, 0622);
-    cMemPtr = shmat(commonMemory, NULL, 0);
     queue = msgget(key, 0);
-    semSet = semget(key, 1, 0);
+
+    sem = sem_open("sem", O_RDWR, 0622, 1);
 
     makeChildren(atoi(argv[1]), atoi(argv[2]));
 }
