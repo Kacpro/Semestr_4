@@ -11,13 +11,25 @@
 
 
 
+enum status
+{
+    SLEEP,
+    WAKES,
+    SITS,
+    SITS_FIRST,
+    START,
+    END,
+    LEAVES,
+    INVITES
+};
+
 struct data
 {
     int waitingClients;
-    int barberIsSleeping;
     int queueLength;
-    int clientStatus;
-    int nextPid;
+    enum status status;
+    int clientPid;
+    int barberPid;
 };
 
 
@@ -26,15 +38,6 @@ struct data* cMemPtr;
 sem_t* sem;
 int queue;
 int commonMemory;
-
-
-
-struct pids
-{
-    pid_t pid;
-    int code;
-};
-
 
 
 long getTime()
@@ -46,116 +49,79 @@ long getTime()
 }
 
 
-/*
- * Doesn't work for some reason. Had to implement explicitly.
- * Stopping on the sem_wait in this attempt and in every attempt to come.
- * kurwa...
- *
-void thingsThatBarbersDo(pid_t pid)
-{
-    sem_post(sem);
-
-    while(cMemPtr->clientStatus != 2);
-
-    sem_wait(sem);
-
-    printf("Shaving starts\t\t%d\t%ld\n", pid, getTime());
-    printf("Shaving ends\t\t%d\t%ld\n", pid, getTime());
-    cMemPtr->clientStatus = 3;
-
-    sem_post(sem);
-
-    while(cMemPtr->clientStatus != 0);
-
-    sem_wait(sem);
-
-    cMemPtr->nextPid = getpid();
-}
-*/
-
-
 void barberLogic()
 {
     struct sembuf* sops = calloc(1, sizeof(struct sembuf));
     sops[0].sem_flg = 0;
 
-    struct msgbuf {
+    cMemPtr->barberPid = getpid();
+
+    struct msgbuf
+    {
         long mtype;
-        struct pids pid;
-        char mtext[0];
+        pid_t pid;
+        char mtext[1];
     };
 
     struct msgbuf msg;
     msg.mtype = 1;
-    int check = 0;
+
 
     while(1)
     {
         sem_wait(sem);
 
-        cMemPtr->clientStatus = -1;
 
-        if (cMemPtr->barberIsSleeping == 0 && check == 1)
+        if (cMemPtr->status == WAKES && cMemPtr->barberPid == getpid())
         {
-            msgrcv(queue, &msg, 10, 0, IPC_NOWAIT);
-            printf("Barber wakes up\t\t\t%ld\n", getTime());
-
-            cMemPtr->clientStatus = 1;
-
+            cMemPtr->status = SITS_FIRST;
+            printf("Barber wakes up\t\t\t%d\t%ld\n", getpid(), getTime());
             sem_post(sem);
-            while(cMemPtr->clientStatus != 2);
-            sem_wait(sem);
-
-            printf("Shaving starts\t\t%d\t%ld\n", msg.pid.pid, getTime());
-            printf("Shaving ends\t\t%d\t%ld\n", msg.pid.pid, getTime());
-            cMemPtr->clientStatus = 3;
-
-            sem_post(sem);
-            while(cMemPtr->clientStatus != 0);
-            sem_wait(sem);
-
-            cMemPtr->nextPid = getpid();
-
+            continue;
         }
-        else if (cMemPtr->waitingClients > 0 && cMemPtr->barberIsSleeping == 0)
+        else if (cMemPtr->status == START && cMemPtr->barberPid == getpid())
         {
-            msgrcv(queue, &msg, 10, 0, IPC_NOWAIT);
-            printf("Inviting a client\t%d\t%ld\n", msg.pid.pid, getTime());
-            cMemPtr->waitingClients--;
-            cMemPtr->nextPid = msg.pid.code;
-
+            cMemPtr->status = END;
+            printf("Barber starts cutting\t\t%d\t%ld\n", getpid(), getTime());
             sem_post(sem);
-            while(cMemPtr->clientStatus != 2);
-            sem_wait(sem);
-
-            printf("Shaving starts\t\t%d\t%ld\n", msg.pid.pid, getTime());
-            printf("Shaving ends\t\t%d\t%ld\n", msg.pid.pid, getTime());
-            cMemPtr->clientStatus = 3;
-
+            continue;
+        }
+        else if (cMemPtr->status == END && cMemPtr->barberPid == getpid())
+        {
+            cMemPtr->status = LEAVES;
+            printf("Barber ends cutting\t\t%d\t%ld\n", getpid(), getTime());
             sem_post(sem);
-            while(cMemPtr->clientStatus != 0);
-            sem_wait(sem);
-
-            cMemPtr->nextPid = getpid();
+            continue;
+        }
+        else if (cMemPtr->status == INVITES && cMemPtr->barberPid == getpid())
+        {
+ //           usleep(1000);
+            if (cMemPtr->waitingClients > 0)
+            {
+                msgrcv(queue, &msg, 10, 0, IPC_NOWAIT);
+                cMemPtr->clientPid = msg.pid;
+                cMemPtr->status = SITS;
+                printf("Barber invites next client\t%d\t%ld\n", getpid(), getTime());
+            }
+            else
+            {
+                cMemPtr->status = SLEEP;
+                cMemPtr->clientPid = 0;
+                printf("Barber falls asleep\t\t%d\t%ld\n", getpid(), getTime());
+            }
+            sem_post(sem);
+            continue;
         }
         else
         {
-            if (cMemPtr->barberIsSleeping == 0)
-            {
-                cMemPtr->barberIsSleeping = 1;
-                printf("Barber falls asleep\t\t%ld\n\n", getTime());
-            }
+            sem_post(sem);
         }
-
-        check = cMemPtr->barberIsSleeping;
-
-        sem_post(sem);
     }
 }
 
 
 
-void signalHandler()
+void signalHandler(int sig)
 {
     msgctl(queue, IPC_RMID, NULL);
 
@@ -171,12 +137,13 @@ void signalHandler()
 
 int main(int argc, char** argv)
 {
+
     struct data sharedData;
-    sharedData.barberIsSleeping = 0;
+    sharedData.status = INVITES;
     sharedData.waitingClients = 0;
     sharedData.queueLength = atoi(argv[1]);
-    sharedData.clientStatus = 0;
-    sharedData.nextPid = getpid();
+    sharedData.clientPid = 0;
+
 
     commonMemory = shm_open("mem", O_CREAT | O_RDWR, 0622);
     ftruncate(commonMemory, sizeof(struct data));
@@ -185,12 +152,14 @@ int main(int argc, char** argv)
 
     key_t key = ftok(getenv("HOME"), 'c');
     queue = msgget(key, IPC_CREAT | 0622);
+    printf("%d\n", queue);
 
     sem = sem_open("sem", O_CREAT | O_RDWR, 0622, 1);
+    sem_post(sem);
 
     *cMemPtr = sharedData;
 
-    signal(SIGTERM, signalHandler);
+    signal(SIGINT, signalHandler);      //TODO switch to SIGTERM
 
     barberLogic();
 }
