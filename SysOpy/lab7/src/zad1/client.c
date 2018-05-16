@@ -10,15 +10,26 @@
 #include <time.h>
 
 
+enum status
+{
+    SLEEP,
+    WAKES,
+    SITS,
+    SITS_FIRST,
+    START,
+    END,
+    LEAVES,
+    INVITES
+};
+
 struct data
 {
     int waitingClients;
-    int barberIsSleeping;
     int queueLength;
-    int clientStatus;
-    int nextPid;
+    enum status status;
+    pid_t clientPid;
+    pid_t barberPid;
 };
-
 
 struct data* cMemPtr;
 int semSet;
@@ -34,13 +45,7 @@ long getTime()
     return times.tv_nsec;
 }
 
-
-struct pids
-{
-    pid_t pid;
-    int code;
-};
-
+pid_t client;
 
 void clientLogic(int numberOfShaves)
 {
@@ -50,7 +55,7 @@ void clientLogic(int numberOfShaves)
     struct msgbuf
     {
         long mtype;
-        struct pids pid;
+        pid_t pid;
         char mtext[0];
     };
 
@@ -60,97 +65,96 @@ void clientLogic(int numberOfShaves)
 
     for (int i=0; i<numberOfShaves; i++)
     {
-        while(cMemPtr->clientStatus != -1);
-
-        sops[0].sem_num = 0;
-        sops[0].sem_op = -1;
-        semop(semSet, sops, 1);
-
-        msg.pid.code = getpid()*(i+1);
-        msg.pid.pid = getpid();
-
-        if (cMemPtr->barberIsSleeping == 1)
+        while(1)
         {
-            cMemPtr->barberIsSleeping = 0;
-            printf("Client wakes the barber up\t\t\t%d\t%ld\n", getpid(), getTime());
-            msgsnd(queue, &msg, 10, 0);
-
-            cMemPtr->nextPid = getpid() * (i+1);
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
-            while(cMemPtr->clientStatus != 1 || cMemPtr->nextPid != getpid()*(i+1));
-
             sops[0].sem_num = 0;
             sops[0].sem_op = -1;
             semop(semSet, sops, 1);
 
-            printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
-            cMemPtr->clientStatus = 2;
+            if (cMemPtr->status == SLEEP && cMemPtr->clientPid == 0 && client == 0)
+            {
+                cMemPtr->clientPid = getpid();
+                cMemPtr->status = WAKES;
+                printf("Client wakes the barber up\t%d\t%ld\n", getpid(), getTime());
 
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-            while(cMemPtr->clientStatus != 3 || cMemPtr->nextPid != getpid()*(i+1));
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
+                continue;
+            }
+            else if (cMemPtr->status == SITS_FIRST && cMemPtr->clientPid == getpid())
+            {
+                cMemPtr->status = START;
+                client = getpid();
+                printf("Client sits on the chair\t%d\t%ld\n", getpid(), getTime());
 
-            printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
-            cMemPtr->clientStatus = 0;
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
+                continue;
+            }
+            else if (cMemPtr->status == SITS && cMemPtr->clientPid == getpid())
+            {
+                cMemPtr->status = START;
+                cMemPtr->waitingClients--;
+                printf("Client sits on the chair\t%d\t%ld\n", getpid(), getTime());
+
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
+
+                continue;
+            }
+            else if (cMemPtr->status == LEAVES && cMemPtr->clientPid == getpid())
+            {
+                cMemPtr->status = INVITES;
+                cMemPtr->clientPid = 0;
+                client = 0;
+                printf("Client leaves\t\t\t%d\t%ld\n", getpid(), getTime());
+
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
+
+                break;
+            }
+            else if (client == 0 && cMemPtr->clientPid != 0)
+            {
+                if (cMemPtr->queueLength <= cMemPtr->waitingClients)
+                {
+                    printf("Client leaves due to the full queue\t%d\t%ld\n", getpid(), getTime());
+
+                    sops[0].sem_num = 0;
+                    sops[0].sem_op = 1;
+                    semop(semSet, sops, 1);
+
+                    break;
+                } else {
+                    client = getpid();
+                    msg.pid = getpid();
+                    cMemPtr->waitingClients++;
+                    msgsnd(queue, &msg, 10, 0);
+                    printf("Client sits in the waiting room\t%d\t%ld\n", getpid(), getTime());
+                }
+
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
+
+                continue;
+            }
+            else
+            {
+
+                sops[0].sem_num = 0;
+                sops[0].sem_op = 1;
+                semop(semSet, sops, 1);
+
+            }
         }
-        else if (cMemPtr->queueLength > cMemPtr->waitingClients)
-        {
-            cMemPtr->waitingClients++;
-            msgsnd(queue, &msg, 10, 0);
-            printf("Client sits in the waiting room\t\t\t%d\t%ld\n", getpid(), getTime());
 
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
-            while(cMemPtr->nextPid != getpid()*(i+1));
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
-
-            printf("Client sits on the shaving chair\t\t%d\t%ld\n", getpid(), getTime());
-            cMemPtr->clientStatus = 1;
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
-
-            while(cMemPtr->clientStatus != 2 || cMemPtr->nextPid != getpid()*(i+1));
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = -1;
-            semop(semSet, sops, 1);
-
-            printf("Client leaves shaved\t\t\t\t%d\t%ld\n", getpid(), getTime());
-            cMemPtr->clientStatus = 0;
-
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-
-        }
-        else
-        {
-            printf("Client leaves due to the lack of free chairs\t%d\t%ld\n", getpid(), getTime());
-            sops[0].sem_num = 0;
-            sops[0].sem_op = 1;
-            semop(semSet, sops, 1);
-        }
     }
     exit(0);
 }
@@ -158,10 +162,11 @@ void clientLogic(int numberOfShaves)
 
 void makeChildren(int numOfClients, int numOfShaves)
 {
-    pid_t pid;
+    client = 0;
+
     for (int i=0; i<numOfClients; i++)
     {
-        if ((pid = fork()) == 0)
+        if (fork() == 0)
         {
             clientLogic(numOfShaves);
         }

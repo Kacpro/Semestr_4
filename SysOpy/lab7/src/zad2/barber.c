@@ -75,21 +75,21 @@ void barberLogic()
         if (cMemPtr->status == WAKES && cMemPtr->barberPid == getpid())
         {
             cMemPtr->status = SITS_FIRST;
-            printf("Barber wakes up\t\t\t%d\t%ld\n", getpid(), getTime());
+            printf("Barber wakes up\t\t\t\t%ld\n", getTime());
             sem_post(sem);
             continue;
         }
         else if (cMemPtr->status == START && cMemPtr->barberPid == getpid())
         {
             cMemPtr->status = END;
-            printf("Barber starts cutting\t\t%d\t%ld\n", getpid(), getTime());
+            printf("Barber starts cutting\t\t%d\t%ld\n", cMemPtr->clientPid, getTime());
             sem_post(sem);
             continue;
         }
         else if (cMemPtr->status == END && cMemPtr->barberPid == getpid())
         {
             cMemPtr->status = LEAVES;
-            printf("Barber ends cutting\t\t%d\t%ld\n", getpid(), getTime());
+            printf("Barber ends cutting\t\t%d\t%ld\n", cMemPtr->clientPid, getTime());
             sem_post(sem);
             continue;
         }
@@ -101,13 +101,13 @@ void barberLogic()
                 msgrcv(queue, &msg, 10, 0, IPC_NOWAIT);
                 cMemPtr->clientPid = msg.pid;
                 cMemPtr->status = SITS;
-                printf("Barber invites next client\t%d\t%ld\n", getpid(), getTime());
+                printf("Barber invites next client\t%d\t%ld\n", msg.pid, getTime());
             }
             else
             {
                 cMemPtr->status = SLEEP;
                 cMemPtr->clientPid = 0;
-                printf("Barber falls asleep\t\t%d\t%ld\n", getpid(), getTime());
+                printf("Barber falls asleep\t\t\t%ld\n", getTime());
             }
             sem_post(sem);
             continue;
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
 
     key_t key = ftok(getenv("HOME"), 'c');
     queue = msgget(key, IPC_CREAT | 0622);
-    printf("%d\n", queue);
+//    printf("%d\n", queue);
 
     sem = sem_open("sem", O_CREAT | O_RDWR, 0622, 1);
     sem_post(sem);

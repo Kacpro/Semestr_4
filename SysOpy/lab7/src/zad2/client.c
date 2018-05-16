@@ -162,7 +162,7 @@ int main(int argc, char** argv)
 
     key_t key = ftok(getenv("HOME"), 'c');
     queue = msgget(key, 0);
-    printf("%d\n", queue);
+//    printf("%d\n", queue);
 
     sem = sem_open("sem", O_RDWR, 0622, 1);
 
