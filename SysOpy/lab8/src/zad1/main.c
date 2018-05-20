@@ -50,6 +50,7 @@ int** parseImage(char* fileName)
         }
     }
 
+    fclose(file);
     free(line);
 
     return result;
@@ -66,26 +67,32 @@ double** parseFilter(char* fileName)
 
     double** result;
     result = calloc(FILTER_SIZE, sizeof(double*));
-    for (int i=0; i<HEIGHT; i++)
+    for (int i=0; i<FILTER_SIZE; i++)
         result[i] = calloc(FILTER_SIZE, sizeof(double));
 
     char* line = calloc(128, sizeof(char));
+    char* lineCpy = calloc(128, sizeof(char));
     int i = 0;
-    while(fgets(line, 128, file))
+    while(fgets(line, 128, file) != NULL && i<FILTER_SIZE*FILTER_SIZE)
     {
-        sscanf(strtok(line, " \n"), "%lf", &result[i/FILTER_SIZE][i%FILTER_SIZE]);
-
+	strcpy(lineCpy, line);
+        sscanf(strtok(lineCpy, " \n"), "%lf", &result[i/FILTER_SIZE][i%FILTER_SIZE]);
         i++;
         char* buf;
+        perror("a");
         while((buf = strtok(NULL, " \n")) != NULL)
         {
             sscanf(buf, "%lf", &result[i/FILTER_SIZE][i%FILTER_SIZE]);
             i++;
+            perror("b");
         }
+        perror("c");
 
     }
-
+    perror("d");
+    fclose(file);
     free(line);
+perror("e");
 
     return result;
 }
@@ -160,6 +167,7 @@ void doSomeWork()
 
 void writeToFile(char* fileName)
 {
+perror("Write");
     FILE *output = fopen(fileName, "w");
 
     fprintf(output, "P2\n");
@@ -174,6 +182,7 @@ void writeToFile(char* fileName)
         }
         fprintf(output, "\n");
     }
+fclose(output);
 }
 
 
