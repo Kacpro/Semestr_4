@@ -3,8 +3,6 @@
 #include <memory.h>
 #include <pthread.h>
 #include <math.h>
-#include <sys/times.h>
-#include <unistd.h>
 
 
 int** INPUT;
@@ -79,20 +77,15 @@ double** parseFilter(char* fileName)
         sscanf(strtok(lineCpy, " \n"), "%lf", &result[i/FILTER_SIZE][i%FILTER_SIZE]);
         i++;
         char* buf;
-        perror("a");
         while((buf = strtok(NULL, " \n")) != NULL)
         {
             sscanf(buf, "%lf", &result[i/FILTER_SIZE][i%FILTER_SIZE]);
             i++;
-            perror("b");
         }
-        perror("c");
-
     }
-    perror("d");
+
     fclose(file);
     free(line);
-perror("e");
 
     return result;
 }
@@ -133,8 +126,9 @@ void doSomeWork()
 
     pthread_t* threads = calloc(NUM_OF_THREADS, sizeof(pthread_t));
 
-    long start, end;
-    start = times(NULL);
+    struct timespec st, en;
+
+    clock_gettime(CLOCK_REALTIME, &st);
 
     int** ints = calloc(NUM_OF_THREADS, sizeof(int*));
     for (int i=0; i<NUM_OF_THREADS; i++)
@@ -157,17 +151,16 @@ void doSomeWork()
             break;
     }
 
-    end = times(NULL);
+    clock_gettime(CLOCK_REALTIME, &en);
+
     free(threads);
     free(ints);
-
-    printf("%lf\n", (end-start)/(1e-6*sysconf(_SC_CLK_TCK)));
+    printf("%lf \n", (en.tv_sec + en.tv_nsec*1e-9 -st.tv_sec - st.tv_nsec*1e-9));
 }
 
 
 void writeToFile(char* fileName)
 {
-perror("Write");
     FILE *output = fopen(fileName, "w");
 
     fprintf(output, "P2\n");
@@ -182,7 +175,8 @@ perror("Write");
         }
         fprintf(output, "\n");
     }
-fclose(output);
+
+    fclose(output);
 }
 
 
