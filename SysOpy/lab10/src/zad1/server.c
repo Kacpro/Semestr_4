@@ -7,29 +7,27 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/epoll.h>
+#include <poll.h>
+#include <pthread.h>
 
 
 char** clients;
+int* clientfd;
 int numOfClients = 0;
+int maxEvenets = 100;
+int clusterSize = 20;
 
 
-void initLocal(char* path)
+int initLocal(char* path)
 {
-    perror(NULL);
+    perror("local");
 
     int listenfd = 0;
-    int connfd;
     struct sockaddr_un serv_addr;
-    time_t ticks;
-
-    char sendBuff[1025];
-    char readBuff[128];
 
     listenfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
     memset(&serv_addr, '0', sizeof(serv_addr));
-    memset(sendBuff, '0', sizeof(sendBuff));
-    memset(readBuff, '0', sizeof(readBuff));
 
     serv_addr.sun_family = AF_UNIX;
     strcpy(serv_addr.sun_path, path);
@@ -37,141 +35,176 @@ void initLocal(char* path)
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
     listen(listenfd, 10);
 
-    while(1)
-    {
-        perror(NULL);
-        connfd = accept(listenfd, (struct sockaddr*)NULL, SOCK_NONBLOCK);
-
-        if (connfd != -1) recv(connfd, readBuff, strlen(readBuff), MSG_DONTWAIT);
-        if (readBuff[0] == '1')
-        {
-            char* read2 = calloc(1024, sizeof(char));
-            strcpy(read2, readBuff);
-
-            char* name = strtok(read2 + sizeof(char), "0");
-            printf("%s %d\n", name, numOfClients);
-            perror("if");
-            int flag = 1;
-            for (int i=0; i<numOfClients; i++)
-            {
-                printf("%s\n", clients[i]);
-                if (!strcmp(clients[i], name))
-                {
-                    flag = 0;
-                }
-            }
-            if (flag == 1)
-            {
-                clients[numOfClients] = name;
-                numOfClients++;
-                write(connfd, "1Y", 2);
-            }
-            else
-            {
-                write(connfd, "1N", 2);
-            }
-
-        }
-        readBuff[0] = 'A';
-        perror("write");
-
-
-        if (connfd != -1) close(connfd);
-        sleep(1);
-    }
+    return listenfd;
 }
 
 
-
-void initNet(int port)
+int initNet(int port)
 {
     int listenfd = 0;
     struct sockaddr_in serv_addr;
-
-    char sendBuff[1025];
-    char readBuff[128];
-    time_t ticks;
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     int option = 1;
     setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     memset(&serv_addr, '0', sizeof(serv_addr));
-    memset(sendBuff, '0', sizeof(sendBuff));
-    memset(readBuff, '0', sizeof(readBuff));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(5000);
+    serv_addr.sin_port = htons(port);
 
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     listen(listenfd, 10);
 
+    return listenfd;
+}
 
-    while(1)
-    {
-        perror(NULL);
-        int connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
 
-        recv(connfd, readBuff, strlen(readBuff), MSG_DONTWAIT);
-        if (readBuff[0] == '1')
-        {
-            char* read2 = calloc(1024, sizeof(char));
-            strcpy(read2, readBuff);
+struct soc
+{
+    int port;
+    char* path;
+};
 
-            char* name = strtok(read2 + sizeof(char), "0");
-            printf("%s %d\n", name, numOfClients);
-            perror("if");
-            int flag = 1;
-            for (int i=0; i<numOfClients; i++)
+
+void* monitor(void* arg) {
+
+    struct soc soc = *(struct soc*)arg;
+
+    struct epoll_event event;
+    int poll = epoll_create1(0);
+
+    perror("1");
+
+    int netFd = initNet(soc.port);
+
+    perror("2");
+
+    event.data.fd = netFd;
+    event.events = EPOLLIN | EPOLLET;
+    epoll_ctl(poll, EPOLL_CTL_ADD, netFd, &event);
+
+    perror("a");
+
+    int localFd = initLocal(soc.path);
+    event.data.fd = localFd;
+    event.events = EPOLLIN | EPOLLET;
+    epoll_ctl(poll, EPOLL_CTL_ADD, localFd, &event);
+
+    struct epoll_event *events = calloc(maxEvenets, sizeof(struct epoll_event));
+
+    char sendBuff[1025];
+    char readBuff[128];
+
+    memset(sendBuff, '0', sizeof(sendBuff));
+    memset(readBuff, '0', sizeof(readBuff));
+
+
+    while (1) {
+        int n = epoll_wait(poll, events, maxEvenets, -1);
+        for (int i = 0; i < n; i++) {
+            if ((events[i].events & EPOLLERR) ||
+                (events[i].events & EPOLLHUP) ||
+                (!(events[i].events & EPOLLIN)))
             {
-                printf("%s\n", clients[i]);
-                if (!strcmp(clients[i], name))
+                fprintf(stderr, "epoll error\n");
+                close(events[i].data.fd);
+                continue;
+            }
+
+            if (events[i].data.fd == netFd || events[i].data.fd == localFd)
+            {
+
+                perror(NULL);
+                int connfd = accept(events[i].data.fd, (struct sockaddr *) NULL, NULL);
+                if (connfd == -1) continue;
+
+
+                recv(connfd, readBuff, strlen(readBuff), 0);
+                if (readBuff[0] == '1')
                 {
-                    flag = 0;
+                    char *read2 = calloc(1024, sizeof(char));
+                    strcpy(read2, readBuff);
+
+                    char *name = strtok(read2 + sizeof(char), "0");
+                    printf("%s %d\n", name, numOfClients);
+                    perror("if");
+                    int flag = 1;
+                    for (int i = 0; i < clusterSize; i++)
+                    {
+                        if (!strcmp(clients[i], name))
+                        {
+                            flag = 0;
+                        }
+                    }
+                    if (flag == 1)
+                    {
+                        for (int i=0; i<clusterSize; i++)
+                            if (clientfd[i] == -1)
+                            {
+                                clients[i] = name;
+                                clientfd[i] = connfd;
+                                break;
+                            }
+                        numOfClients++;
+                        write(connfd, "1Y", 2);
+                    }
+                    else
+                    {
+                        write(connfd, "1N", 2);
+                        close(connfd);
+                    }
+
+                    usleep(1000);
                 }
             }
-            if (flag == 1)
-            {
-                clients[numOfClients] = name;
-                numOfClients++;
-                write(connfd, "1Y", 2);
-            }
-            else
-            {
-                write(connfd, "1N", 2);
-            }
-
         }
-        readBuff[0] = 'A';
 
-        ticks = time(NULL);
-        snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-        write(connfd, sendBuff, strlen(sendBuff));
-
-        close(connfd);
-        sleep(1);
     }
 }
 
 
-void monitor()
+void* ping(void* a)
 {
-    struct epoll_event event;
-    int poll = epoll_create1(0);
-
-//    event.data.fd =
+    while (1)
+    {
+        sleep(1);
+        for (int i = 0; i < clusterSize; i++)
+        {
+            if (clientfd[i] != -1 && send(clientfd[i], "2", 2, MSG_NOSIGNAL) == -1)
+            {
+                printf("Node lost\n");
+                clientfd[i] = -1;
+                clients[i] = "";
+            }
+        }
+    }
 }
 
 
 
 int main(int argc, char** argv)
 {
-    clients = calloc(20, sizeof(char*));
-//    initNet(atoi(argv[1]));
+    clients = calloc(clusterSize, sizeof(char*));
+    clientfd = calloc(clusterSize, sizeof(int));
+    for (int i=0; i<clusterSize; i++)
+    {
+        clients[i] = "";
+        clientfd[i] = -1;
+    }
 
-    initLocal(argv[1]);
+    pthread_t watcher, pinger, sender;
+
+    struct soc* s = calloc(1, sizeof(struct soc));
+    s->path = argv[2];
+    s->port = atoi(argv[1]);
+
+    pthread_create(&watcher, NULL, monitor, s);
+    pthread_create(&pinger, NULL, ping, NULL);
+
+    while(1);
 
     return 0;
 }

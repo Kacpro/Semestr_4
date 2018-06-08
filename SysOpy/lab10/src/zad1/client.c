@@ -8,53 +8,19 @@
 #include <sys/un.h>
 
 
-void initNet(char* address, char* name)
+void receive(int fd, char* name)
 {
-
-    char* addr = strtok(address, ":");
-    int port = atoi(strtok(NULL, "\0\n"));
-
-
-    printf("%s %d\n", addr, port);
-
-    int sockfd = 0, n = 0;
     char recvBuff[1024];
-    struct sockaddr_in serv_addr;
-
-
     memset(recvBuff, '0',sizeof(recvBuff));
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("\n Error : Could not create socket \n");
-        return;
-    }
-
-    memset(&serv_addr, '0', sizeof(serv_addr));
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(5000);
-
-    if(inet_pton(AF_INET, addr, &serv_addr.sin_addr)<=0)
-    {
-        printf("\n inet_pton error occured\n");
-        return;
-    }
-
-    if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        perror(NULL);
-        printf("\n Error : Connect Failed \n");
-        return;
-    }
-
 
     char* msg = calloc(100, sizeof(char));
     strcat(msg, "1");
     strcat(msg, name);
-    write(sockfd, msg, strlen(msg));
+    write(fd, msg, strlen(msg));
 
-    read(sockfd, recvBuff, sizeof(recvBuff));
-    printf("%c\n", recvBuff[1]);
+    read(fd, recvBuff, sizeof(recvBuff));
+    printf("aaa%c\n", recvBuff[1]);
+
     if (recvBuff[0] == '1' && recvBuff[1] == 'N')
     {
         printf("Given name already exists\n");
@@ -63,18 +29,35 @@ void initNet(char* address, char* name)
 
     while (1)
     {
-        recv(sockfd, recvBuff, sizeof(recvBuff)-1, 0);
-        recvBuff[n] = 0;
-
+        recv(fd, recvBuff, sizeof(recvBuff), 0);
+        usleep(1000);
     }
+}
+
+
+void initNet(char* address, char* name)
+{
+    char* addr = strtok(address, ":");
+    int port = atoi(strtok(NULL, "\0\n"));
+    int sockfd = 0;
+    struct sockaddr_in serv_addr;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    memset(&serv_addr, '0', sizeof(serv_addr));
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    inet_pton(AF_INET, addr, &serv_addr.sin_addr);
+
+    connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+
+    receive(sockfd, name);
 }
 
 
 void initLocal(char* path, char* name)
 {
-    perror(NULL);
-    int sockfd = 0, n = 0;
-    char recvBuff[1024];
+    int sockfd = 0;
     struct sockaddr_un serv_addr;
 
     sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -85,26 +68,7 @@ void initLocal(char* path, char* name)
 
     connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
-    char* msg = calloc(100, sizeof(char));
-    strcat(msg, "1");
-    strcat(msg, name);
-    write(sockfd, msg, strlen(msg));
-
-    read(sockfd, recvBuff, sizeof(recvBuff));
-    printf("%c\n", recvBuff[1]);
-
-    if (recvBuff[0] == '1' && recvBuff[1] == 'N')
-    {
-        printf("Given name already exists\n");
-        return;
-    }
-
-    while (1)
-    {
-        recv(sockfd, recvBuff, sizeof(recvBuff)-1, 0);
-        recvBuff[n] = 0;
-
-    }
+    receive(sockfd, name);
 }
 
 int main(int argc, char** argv)
