@@ -8,28 +8,73 @@
 #include <sys/un.h>
 
 
+int calculate(char* e)
+{
+    int arg1 = atoi(strtok(e, " "));
+    char* op = strtok(NULL, " ");
+    int arg2 = atoi(strtok(NULL, " \n"));
+
+    switch(op[0])
+    {
+        case '+': return arg1 + arg2;
+        case '-': return arg1 - arg2;
+        case '*': return arg1 * arg2;
+        case '/': return arg1 / arg2;
+        default: return -1;
+    }
+}
+
+
 void receive(int fd, char* name)
 {
     char recvBuff[1024];
-    memset(recvBuff, '0',sizeof(recvBuff));
 
-    char* msg = calloc(100, sizeof(char));
+    char* msg = calloc(128, sizeof(char));
     strcat(msg, "1");
     strcat(msg, name);
     write(fd, msg, strlen(msg));
+    free(msg);
 
     read(fd, recvBuff, sizeof(recvBuff));
-    printf("aaa%c\n", recvBuff[1]);
 
-    if (recvBuff[0] == '1' && recvBuff[1] == 'N')
+    if (recvBuff[0] == '1' && (recvBuff[1] == 'N' || recvBuff[1] == 'Y'))
     {
-        printf("Given name already exists\n");
+        if (recvBuff[1] == 'N')
+        {
+            printf("Given name already exists in cluster\n");
+            return;
+        }
+        else
+        {
+            printf("Connected to cluster\n");
+        }
+    }
+    else
+    {
+        printf("Unknown message\n");
         return;
     }
 
     while (1)
     {
         recv(fd, recvBuff, sizeof(recvBuff), 0);
+        if (recvBuff[0] == '3')
+        {
+            char* result = calloc(10, sizeof(char));
+            int p = (int)recvBuff[1];
+            printf("Calc request: %s", recvBuff + 2 * sizeof(char));
+            sprintf(result, "%d", calculate(recvBuff + 2 * sizeof(char)));
+
+            char* msg = calloc(128, sizeof(char));
+            char pos[] = {(char)p, '\0'};
+            strcpy(msg, "3");
+            strcat(msg, pos);
+            strcat(msg, result);
+
+            write(fd, msg, 128);
+            free(msg);
+        }
+
         usleep(1000);
     }
 }
@@ -43,7 +88,6 @@ void initNet(char* address, char* name)
     struct sockaddr_in serv_addr;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
@@ -61,7 +105,6 @@ void initLocal(char* path, char* name)
     struct sockaddr_un serv_addr;
 
     sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    memset(&serv_addr, '0', sizeof(serv_addr));
 
     strcpy(serv_addr.sun_path, path);
     serv_addr.sun_family = AF_UNIX;
