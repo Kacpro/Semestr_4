@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/un.h>
+#include <stddef.h>
 
 
 int calculate(char* e)
@@ -27,15 +28,19 @@ int calculate(char* e)
 
 void receive(int fd, char* name)
 {
-    char recvBuff[1024];
+    char recvBuff[128];
 
     char* msg = calloc(128, sizeof(char));
-    strcat(msg, "1");
+    strcpy(msg, "1");
     strcat(msg, name);
     write(fd, msg, strlen(msg));
     free(msg);
 
+//    perror("write");
+
     read(fd, recvBuff, sizeof(recvBuff));
+
+//    perror("read");
 
     if (recvBuff[0] == '1' && (recvBuff[1] == 'N' || recvBuff[1] == 'Y'))
     {
@@ -51,15 +56,19 @@ void receive(int fd, char* name)
     }
     else
     {
+        printf("%s\n", recvBuff);
         printf("Unknown message\n");
         return;
     }
 
     while (1)
     {
-        recv(fd, recvBuff, sizeof(recvBuff), 0);
+  //      perror("start");
+        read(fd, recvBuff, sizeof(recvBuff));
+  //      perror("rec");
         if (recvBuff[0] == '3')
         {
+            perror("calc");
             char* result = calloc(10, sizeof(char));
             int p = (int)recvBuff[1];
             printf("Calc request: %s", recvBuff + 2 * sizeof(char));
@@ -74,6 +83,16 @@ void receive(int fd, char* name)
             write(fd, msg, 128);
             free(msg);
         }
+        else if (recvBuff[0] == '2')
+        {
+//            printf("pong\n");
+            write(fd, "2", 1);
+        }
+        else if (recvBuff[0] == '5')
+        {
+            write(fd, recvBuff + sizeof(char), 128);
+        }
+        recvBuff[0] = '0';
 
         usleep(1000);
     }
@@ -87,13 +106,21 @@ void initNet(char* address, char* name)
     int sockfd = 0;
     struct sockaddr_in serv_addr;
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    int option = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &option, sizeof(option));
+
+//    perror("socket");
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(5000);
     inet_pton(AF_INET, addr, &serv_addr.sin_addr);
 
+ //   bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+//    perror("bind");
     connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+
 
     receive(sockfd, name);
 }
@@ -104,12 +131,21 @@ void initLocal(char* path, char* name)
     int sockfd = 0;
     struct sockaddr_un serv_addr;
 
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    int option = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &option, sizeof(option));
+//    perror("socket");
+
 
     strcpy(serv_addr.sun_path, path);
     serv_addr.sun_family = AF_UNIX;
 
+    bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(sa_family_t));
+//    perror("bind");
+
     connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+
+//    perror("connect");
 
     receive(sockfd, name);
 }
